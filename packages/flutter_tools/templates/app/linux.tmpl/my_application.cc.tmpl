@@ -6,9 +6,89 @@
 
 struct _MyApplication {
   GtkApplication parent_instance;
+  gchar *build_name;
+  gchar *build_number;
+};
+
+enum {
+  PROP_NONE,
+  PROP_BUILD_NAME,
+  PROP_BUILD_NUMBER,
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+static const gchar *my_application_get_build_name(MyApplication *application) {
+  g_return_val_if_fail(MY_IS_APPLICATION(application), NULL);
+  return application->build_name;
+}
+
+static void my_application_set_build_name(MyApplication *application,
+                                          const gchar *build_name) {
+  g_return_if_fail(MY_IS_APPLICATION(application));
+  if (g_strcmp0 (application->build_name, build_name) != 0) {
+    g_free(application->build_name);
+    application->build_name = g_strdup(build_name);
+    g_object_notify(G_OBJECT(application), "build_name");
+  }
+}
+
+static const gchar *my_application_get_build_number(MyApplication *application) {
+  g_return_val_if_fail(MY_IS_APPLICATION(application), NULL);
+  return application->build_number;
+}
+
+static void my_application_set_build_number(MyApplication *application,
+                                            const gchar *build_number) {
+  g_return_if_fail(MY_IS_APPLICATION(application));
+
+  if (g_strcmp0 (application->build_number, build_number) != 0) {
+    g_free(application->build_number);
+    application->build_number = g_strdup(build_number);
+    g_object_notify(G_OBJECT(application), "build_number");
+  }
+}
+
+static void my_application_get_property(GObject *object,
+                                        guint prop_id,
+                                        GValue *value,
+                                        GParamSpec *pspec) {
+  MyApplication *application = MY_APPLICATION(object);
+  switch (prop_id) {
+  case PROP_BUILD_NAME:
+    g_value_set_string(value, my_application_get_build_name(application));
+    break;
+  case PROP_BUILD_NUMBER:
+    g_value_set_string(value, my_application_get_build_number(application));
+    break;
+  default:
+    g_assert_not_reached();
+  }
+}
+
+static void my_application_set_property(GObject *object,
+                                        guint prop_id,
+                                        const GValue *value,
+                                        GParamSpec *pspec) {
+  MyApplication *application = MY_APPLICATION(object);
+  switch (prop_id) {
+  case PROP_BUILD_NAME:
+    my_application_set_build_name(application, g_value_get_string(value));
+    break;
+  case PROP_BUILD_NUMBER:
+    my_application_set_build_number(application, g_value_get_string(value));
+    break;
+  default:
+    g_assert_not_reached();
+  }
+}
+
+static void my_application_finalize(GObject *object) {
+  MyApplication *application = MY_APPLICATION(object);
+  g_free(application->build_name);
+  g_free(application->build_number);
+  G_OBJECT_CLASS(my_application_parent_class)->finalize(object);
+}
 
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
@@ -34,7 +114,30 @@ static void my_application_activate(GApplication* application) {
 }
 
 static void my_application_class_init(MyApplicationClass* klass) {
+  GObjectClass *object_class = G_OBJECT_CLASS(klass);
+  object_class->get_property = my_application_get_property;
+  object_class->set_property = my_application_set_property;
+  object_class->finalize = my_application_finalize;
+
   G_APPLICATION_CLASS(klass)->activate = my_application_activate;
+
+  g_object_class_install_property(object_class, PROP_BUILD_NAME,
+    g_param_spec_string("build-name",
+                        "Build name",
+                        "The build name of the application.",
+                        NULL,
+                        GParamFlags(G_PARAM_READWRITE |
+                                    G_PARAM_CONSTRUCT |
+                                    G_PARAM_STATIC_STRINGS)));
+
+  g_object_class_install_property(object_class, PROP_BUILD_NUMBER,
+    g_param_spec_string("build-number",
+                        "Build number",
+                        "The build number of the application.",
+                        NULL,
+                        GParamFlags(G_PARAM_READWRITE |
+                                    G_PARAM_CONSTRUCT |
+                                    G_PARAM_STATIC_STRINGS)));
 }
 
 static void my_application_init(MyApplication* self) {}
@@ -42,5 +145,7 @@ static void my_application_init(MyApplication* self) {}
 MyApplication* my_application_new() {
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID,
+                                     "build-name", BUILD_NAME,
+                                     "build-number", BUILD_NUMBER,
                                      nullptr));
 }

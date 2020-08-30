@@ -49,9 +49,8 @@ Future<void> buildLinux(
     timeout: null,
   );
   try {
-    final String buildModeName = getNameForBuildMode(buildInfo.mode ?? BuildMode.release);
-    final Directory buildDirectory = globals.fs.directory(getLinuxBuildDirectory()).childDirectory(buildModeName);
-    await _runCmake(buildModeName, linuxProject.cmakeFile.parent, buildDirectory);
+    final Directory buildDirectory = _getBuildDirectory(buildInfo);
+    await _runCmake(buildInfo, linuxProject.cmakeFile.parent, buildDirectory);
     await _runBuild(buildDirectory);
   } finally {
     status.cancel();
@@ -81,12 +80,17 @@ Future<void> buildLinux(
   }
 }
 
-Future<void> _runCmake(String buildModeName, Directory sourceDir, Directory buildDir) async {
+Directory _getBuildDirectory(BuildInfo buildInfo) {
+  final String buildModeName = getNameForBuildMode(buildInfo.mode);
+  return globals.fs.directory(getLinuxBuildDirectory()).childDirectory(buildModeName);
+}
+
+Future<void> _runCmake(BuildInfo buildInfo, Directory sourceDir, Directory buildDir) async {
   final Stopwatch sw = Stopwatch()..start();
 
   await buildDir.create(recursive: true);
 
-  final String buildFlag = toTitleCase(buildModeName);
+  final String buildFlag = toTitleCase(getNameForBuildMode(buildInfo.mode));
   int result;
   try {
     result = await processUtils.stream(
@@ -95,6 +99,10 @@ Future<void> _runCmake(String buildModeName, Directory sourceDir, Directory buil
         '-G',
         'Ninja',
         '-DCMAKE_BUILD_TYPE=$buildFlag',
+        if (buildInfo.buildName != null)
+          '-DBUILD_NAME=${buildInfo.buildName}',
+        if (buildInfo.buildNumber != null)
+          '-DBUILD_NUMBER=${buildInfo.buildNumber}',
         sourceDir.path,
       ],
       workingDirectory: buildDir.path,
