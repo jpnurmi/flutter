@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:file/file.dart';
 import 'package:meta/meta.dart' show required;
 import 'package:vm_service/vm_service.dart' as vm_service;
@@ -728,23 +730,12 @@ extension FlutterVmService on vm_service.VmService {
     return null;
   }
 
-  /// Invoke a flutter extension method, if the flutter extension is not
-  /// available, returns null.
-  Future<Map<String, dynamic>> invokeFlutterExtensionRpcRaw(
+  Future<vm_service.Response> _checkedCallServiceExtension(
     String method, {
-    @required String isolateId,
     Map<String, dynamic> args,
   }) async {
     try {
-
-      final vm_service.Response response = await callServiceExtension(
-        method,
-        args: <String, Object>{
-          'isolateId': isolateId,
-          ...?args,
-        },
-      );
-      return response.json;
+      return await callServiceExtension(method, args: args);
     } on vm_service.RPCError catch (err) {
       // If an application is not using the framework or the VM service
       // disappears while handling a request, return null.
@@ -754,6 +745,23 @@ extension FlutterVmService on vm_service.VmService {
       }
       rethrow;
     }
+  }
+
+  /// Invoke a flutter extension method, if the flutter extension is not
+  /// available, returns null.
+  Future<Map<String, dynamic>> invokeFlutterExtensionRpcRaw(
+    String method, {
+    @required String isolateId,
+    Map<String, dynamic> args,
+  }) async {
+    final vm_service.Response response = await _checkedCallServiceExtension(
+      method,
+      args: <String, Object>{
+        'isolateId': isolateId,
+        ...?args,
+      },
+    );
+    return response?.json;
   }
 
   /// List all [FlutterView]s attached to the current VM.
@@ -771,7 +779,10 @@ extension FlutterVmService on vm_service.VmService {
         kListViewsMethod,
       );
       if (response == null) {
-        return null;
+        // The service may have disappeared mid-request.
+        // Return an empty list now, and let the shutdown logic elsewhere deal
+        // with cleaning up.
+        return <FlutterView>[];
       }
       final List<Object> rawViews = response.json['views'] as List<Object>;
       final List<FlutterView> views = <FlutterView>[
@@ -791,31 +802,42 @@ extension FlutterVmService on vm_service.VmService {
     return getIsolate(isolateId)
       .catchError((dynamic error, StackTrace stackTrace) {
         return null;
-      }, test: (dynamic error) => error is vm_service.SentinelException);
+      }, test: (dynamic error) {
+        return (error is vm_service.SentinelException) ||
+          (error is vm_service.RPCError && error.code == RPCErrorCodes.kServiceDisappeared);
+      });
   }
 
   /// Create a new development file system on the device.
   Future<vm_service.Response> createDevFS(String fsName) {
-    return callServiceExtension('_createDevFS', args: <String, dynamic>{'fsName': fsName});
+    // Call the unchecked version of `callServiceExtension` because the caller
+    // has custom handling of certain RPCErrors.
+    return callServiceExtension(
+      '_createDevFS',
+      args: <String, dynamic>{'fsName': fsName},
+    );
   }
 
   /// Delete an existing file system.
-  Future<vm_service.Response> deleteDevFS(String fsName) {
-    return callServiceExtension('_deleteDevFS', args: <String, dynamic>{'fsName': fsName});
+  Future<void> deleteDevFS(String fsName) async {
+    await _checkedCallServiceExtension(
+      '_deleteDevFS',
+      args: <String, dynamic>{'fsName': fsName},
+    );
   }
 
   Future<vm_service.Response> screenshot() {
-    return callServiceExtension(kScreenshotMethod);
+    return _checkedCallServiceExtension(kScreenshotMethod);
   }
 
   Future<vm_service.Response> screenshotSkp() {
-    return callServiceExtension(kScreenshotSkpMethod);
+    return _checkedCallServiceExtension(kScreenshotSkpMethod);
   }
 
   /// Set the VM timeline flags.
-  Future<vm_service.Response> setVMTimelineFlags(List<String> recordedStreams) {
+  Future<void> setTimelineFlags(List<String> recordedStreams) async {
     assert(recordedStreams != null);
-    return callServiceExtension(
+    await _checkedCallServiceExtension(
       'setVMTimelineFlags',
       args: <String, dynamic>{
         'recordedStreams': recordedStreams,
@@ -823,8 +845,8 @@ extension FlutterVmService on vm_service.VmService {
     );
   }
 
-  Future<vm_service.Response> getVMTimeline() {
-    return callServiceExtension('getVMTimeline');
+  Future<vm_service.Response> getTimeline() {
+    return _checkedCallServiceExtension('getVMTimeline');
   }
 }
 
