@@ -1400,8 +1400,6 @@ class TextInput {
     );
   }
 
-  // NOTE: Autofill is not just visual, but presumably cannot be handled by
-  // multiple text input sources at the same time...
   void _requestAutofill() {
     _currentControl?.requestAutofill();
   }
@@ -1460,13 +1458,73 @@ class TextInput {
   }
 }
 
+/// A mixin class for implementing text input controls.
+///
+/// Text input controls handle text input state changes and visual input control
+/// requests from the framework, and communicate user input back to the framework.
+///
+/// Input controls are installed with [TextInput.addInputControl], and the
+/// currently active input control is set with [TextInput.setCurrentInputControl].
+///
+/// Text input control implementations should call [TextInputControl.updateEditingValue]
+/// to communicate user input to the attached input client. All other [TextInputControl]
+/// methods are called by the framework to inform input state changes and request
+/// visual input control changes.
+///
+/// ### Text input state changes (all input controls)
+///
+/// Text input state changes are delivered to all installed input controls. Each
+/// input control is responsible for managing its internal state based on these
+/// changes, to stay in sync with the framework. The following methods designate
+/// text input state changes, and are called on all installed input controls:
+///
+/// - [TextInputControl.attach]
+/// - [TextInputControl.detach]
+/// - [TextInputControl.updateConfig]
+/// - [TextInputControl.setEditingState]
+///
+/// ### Visual text input control requests (current input control)
+///
+/// Visual text input control requests, such as showing and hiding the input
+/// control, are only delivered to the current input control. The following
+/// methods can be overridden to react to visual input control requests:
+///
+/// - [TextInputControl.show]
+/// - [TextInputControl.hide]
+/// - [TextInputControl.setEditableSizeAndTransform]
+/// - [TextInputControl.setComposingRect]
+/// - [TextInputControl.setStyle]
+/// - [TextInputControl.requestAutofill]
+/// - [TextInputControl.finishAutofillContext]
 mixin TextInputControl {
-  // editing state (all)
+  /// Requests the text input control to attach to the given input client.
+  ///
+  /// This method is called when a text input client is attached. The input
+  /// control should update its configuration to match the client's configuration.
   void attach(TextInputClient client, TextInputConfiguration configuration) {}
+
+  /// Requests the text input control to detach from the given input client.
+  ///
+  /// This method is called when a text input client is detached. The input
+  /// control should release any resources allocated for the client.
   void detach(TextInputClient client) {}
+
+  /// Informs the text input control about input configuration changes.
+  ///
+  /// This method is called when the configuration of the attached input client
+  /// has changed.
   void updateConfig(TextInputConfiguration configuration) {}
+
+  /// Informs the text input control about editing state changes.
+  ///
+  /// This method is called when the editing state of the attached input client
+  /// has changed.
   void setEditingState(TextEditingValue value) {}
 
+  /// Updates the editing value of the attached input client.
+  ///
+  /// This method should be called by the text input control implementation to
+  /// communicate user input to the attached input client.
   @nonVirtual
   void updateEditingValue(TextEditingValue value) {
     TextInput._instance._currentConnection?._client.updateEditingValue(value);
@@ -1476,11 +1534,33 @@ mixin TextInputControl {
     }
   }
 
-  // visual (current)
+  /// Requests that the current text input control is shown.
+  ///
+  /// This method is called on the _current_ input control when it should become
+  /// visible.
   void show() {}
+
+  /// Requests that the current text input control is hidden.
+  ///
+  /// This method is called on the _current_ input control when it should hide.
   void hide() {}
+
+  /// Informs the current text input control about client position changes.
+  ///
+  /// This method is called on the _current_ input control when it should position
+  /// itself in relation to the attached input client.
   void setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {}
+
+  /// Informs the current text input control about composing area changes.
+  ///
+  /// This method is called on the _current_ input control when the attached
+  /// input client's composing area changes.
   void setComposingRect(Rect rect) {}
+
+  /// Informs the current text input control about text style changes.
+  ///
+  /// This method is called on the _current_ input control when the attached
+  /// input client's text style changes.
   void setStyle({
     required String? fontFamily,
     required double? fontSize,
@@ -1488,13 +1568,26 @@ mixin TextInputControl {
     required TextDirection textDirection,
     required TextAlign textAlign,
   }) {}
+
+
+  /// Requests autofill from the current text input control.
+  ///
+  /// This method is called on the _current_ input control when its autofill UI
+  /// should be shown.
   void requestAutofill() {}
+
+  /// Finishes the current autofill context.
+  ///
+  /// This method is called on the _current_ input control when the autofill
+  /// context should be finalized.
   void finishAutofillContext({bool shouldSave = true}) {}
 }
 
+/// Provides access to the platform text input control.
 class PlatformTextInputControl with TextInputControl {
   PlatformTextInputControl._();
 
+  /// The shared instance of [PlatformTextInputControl].
   static final TextInputControl instance = PlatformTextInputControl._();
 
   MethodChannel get _channel => TextInput._instance._channel;
