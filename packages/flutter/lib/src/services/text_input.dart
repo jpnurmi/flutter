@@ -866,7 +866,7 @@ abstract class TextInputClient {
 ///    between the system's text input and a [TextInputClient].
 ///  * [EditableText], a [TextInputClient] that connects to and interacts with
 ///    the system's text input using a [TextInputConnection].
-class TextInputConnection implements TextInputHandler { // not strictly necessary
+class TextInputConnection {
   TextInputConnection._(this._client)
       : assert(_client != null),
         _id = _nextId++;
@@ -897,7 +897,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
   bool get attached => TextInput._instance._currentConnection == this;
 
   /// Requests that the text input control become visible.
-  @override
   void show() {
     assert(attached);
     TextInput._instance._show();
@@ -911,7 +910,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
   /// See also:
   ///
   ///  * [EditableText], a [TextInputClient] that calls this method when focused.
-  @override
   void requestAutofill() {
     assert(attached);
     TextInput._instance._requestAutofill();
@@ -919,7 +917,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
 
   /// Requests that the text input control update itself according to the new
   /// [TextInputConfiguration].
-  @override
   void updateConfig(TextInputConfiguration configuration) {
     assert(attached);
     TextInput._instance._updateConfig(configuration);
@@ -927,7 +924,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
 
   /// Requests that the text input control change its internal state to match
   /// the given state.
-  @override
   void setEditingState(TextEditingValue value) {
     assert(attached);
     TextInput._instance._setEditingState(value);
@@ -942,7 +938,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
   ///
   /// 2. [transform]: a matrix that maps the local paint coordinate system
   ///                 to the [PipelineOwner.rootNode].
-  @override
   void setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {
     if (editableBoxSize != _cachedSize || transform != _cachedTransform) {
       _cachedSize = editableBoxSize;
@@ -958,7 +953,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
   /// [Rect] is not finite, a [Rect] of size (-1, -1) will be sent instead.
   ///
   /// The information is currently only used on iOS, for positioning the IME bar.
-  @override
   void setComposingRect(Rect rect) {
     assert(rect != null);
     if (rect == _cachedRect)
@@ -973,7 +967,6 @@ class TextInputConnection implements TextInputHandler { // not strictly necessar
   /// This information is used by the Flutter Web Engine to change the style
   /// of the hidden native input's content. Hence, the content size will match
   /// to the size of the editable widget's content.
-  @override
   void setStyle({
     required String? fontFamily,
     required double? fontSize,
@@ -1217,7 +1210,7 @@ class TextInput {
     assert(_debugEnsureInputActionWorksOnPlatform(configuration.inputAction));
     _currentConnection = connection;
     _currentConfiguration = configuration;
-    _setClient(configuration);
+    _setClient(connection._client, configuration);
   }
 
   static bool _debugEnsureInputActionWorksOnPlatform(TextInputAction inputAction) {
@@ -1342,14 +1335,15 @@ class TextInput {
   // - clearClient()
   // - updateConfig()
   // - setEditingState()
-  void _setClient(TextInputConfiguration configuration) {
+  void _setClient(TextInputClient client, TextInputConfiguration configuration) {
     for (final TextInputControl control in _allControls)
-      control.setClient(configuration);
+      control.attach(client, configuration);
   }
 
   void _clearClient() {
+    final TextInputClient client = _currentConnection!._client;
     for (final TextInputControl control in _allControls)
-      control.clearClient();
+      control.detach(client);
     _currentConnection = null;
     _scheduleHide();
   }
@@ -1464,50 +1458,41 @@ class TextInput {
     assert(shouldSave != null);
     TextInput._instance._currentControl?.finishAutofillContext(shouldSave: shouldSave);
   }
-
-  // PROPOSAL: Custom text input controls need a way to communicate editing
-  // changes to the current text input client whilst keeping the other input
-  // controls in sync.
-  static void updateEditingValue(TextEditingValue value) {
-    _instance._currentConnection?._client.updateEditingValue(value);
-    for (final TextInputControl control in _instance._allControls)
-      control.setEditingState(value);
-  }
-
-  static void performAction(TextInputAction action) {
-    _instance._currentConnection?._client.performAction(action);
-  }
 }
 
-// PROPOSAL: A common interface for all text input handlers, including text
-// input connections and controls. This is the existing TextInputConnection
-// interface with connection-specific id/client/close members left out.
-abstract class TextInputHandler {
-  void show();
-  void requestAutofill();
-  void updateConfig(TextInputConfiguration configuration);
-  void setEditingState(TextEditingValue value);
-  void setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform);
-  void setComposingRect(Rect rect);
+mixin TextInputControl {
+  // editing state (all)
+  void attach(TextInputClient client, TextInputConfiguration configuration) {}
+  void detach(TextInputClient client) {}
+  void updateConfig(TextInputConfiguration configuration) {}
+  void setEditingState(TextEditingValue value) {}
+
+  @nonVirtual
+  void updateEditingValue(TextEditingValue value) {
+    TextInput._instance._currentConnection?._client.updateEditingValue(value);
+    for (final TextInputControl control in TextInput._instance._allControls) {
+      if (control != this)
+        control.setEditingState(value);
+    }
+  }
+
+  // visual (current)
+  void show() {}
+  void hide() {}
+  void setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {}
+  void setComposingRect(Rect rect) {}
   void setStyle({
     required String? fontFamily,
     required double? fontSize,
     required FontWeight? fontWeight,
     required TextDirection textDirection,
     required TextAlign textAlign,
-  });
+  }) {}
+  void requestAutofill() {}
+  void finishAutofillContext({bool shouldSave = true}) {}
 }
 
-// PROPOSAL: An extended interface for text input controls.
-abstract class TextInputControl implements TextInputHandler {
-  void setClient(TextInputConfiguration configuration);
-  void clearClient();
-  void hide();
-  void finishAutofillContext({bool shouldSave = true});
-}
-
-// PROPOSAL: The built-in method channel based platform text input control.
-class PlatformTextInputControl implements TextInputControl {
+class PlatformTextInputControl with TextInputControl {
   PlatformTextInputControl._();
 
   static final TextInputControl instance = PlatformTextInputControl._();
@@ -1515,17 +1500,7 @@ class PlatformTextInputControl implements TextInputControl {
   MethodChannel get _channel => TextInput._instance._channel;
 
   @override
-  void show() {
-    _channel.invokeMethod<void>('TextInput.show');
-  }
-
-  @override
-  void hide() {
-    _channel.invokeMethod<void>('TextInput.hide');
-  }
-
-  @override
-  void setClient(TextInputConfiguration configuration) {
+  void attach(TextInputClient client, TextInputConfiguration configuration) {
     _channel.invokeMethod<void>(
       'TextInput.setClient',
       <dynamic>[ TextInput._instance._currentConnection!._id, configuration.toJson() ],
@@ -1533,13 +1508,8 @@ class PlatformTextInputControl implements TextInputControl {
   }
 
   @override
-  void clearClient() {
+  void detach(TextInputClient client) {
     _channel.invokeMethod<void>('TextInput.clearClient');
-  }
-
-  @override
-  void requestAutofill() {
-    _channel.invokeMethod<void>('TextInput.requestAutofill');
   }
 
   @override
@@ -1556,6 +1526,16 @@ class PlatformTextInputControl implements TextInputControl {
       'TextInput.setEditingState',
       value.toJSON(),
     );
+  }
+
+  @override
+  void show() {
+    _channel.invokeMethod<void>('TextInput.show');
+  }
+
+  @override
+  void hide() {
+    _channel.invokeMethod<void>('TextInput.hide');
   }
 
   @override
@@ -1601,6 +1581,11 @@ class PlatformTextInputControl implements TextInputControl {
         'textDirectionIndex': textDirection.index,
       },
     );
+  }
+
+  @override
+  void requestAutofill() {
+    _channel.invokeMethod<void>('TextInput.requestAutofill');
   }
 
   @override
