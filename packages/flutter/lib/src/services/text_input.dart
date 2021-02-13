@@ -856,6 +856,18 @@ abstract class TextInputClient {
   ///
   /// [TextInputClient] should cleanup its connection and finalize editing.
   void connectionClosed();
+
+  /// The framework calls this method to notify that the text input control has
+  /// been changed.
+  ///
+  /// The [TextInputClient] may switch to the new text input control by hiding
+  /// the old and showing the new input control.
+  ///
+  /// See also:
+  ///
+  ///  * [TextInputControl.hide], a method to hide the old input control.
+  ///  * [TextInputControl.show], a method to show the new input control.
+  void didChangeInputControl(TextInputControl? oldControl, TextInputControl? newControl);
 }
 
 /// An interface for interacting with a text input control.
@@ -1146,8 +1158,13 @@ class TextInput {
     _instance._inputControls.remove(control);
   }
 
-  static void setCurrentInputControl(TextInputControl ?control) {
-    _instance._currentControl = control;
+  static void setCurrentInputControl(TextInputControl ?newControl) {
+    final TextInputControl? oldControl = _instance._currentControl;
+    if (newControl == oldControl)
+      return;
+    _instance._currentControl = newControl;
+    final TextInputClient? client = _instance._currentConnection?._client;
+    client?.didChangeInputControl(oldControl, newControl);
   }
 
   TextInputControl? _currentControl;
