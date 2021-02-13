@@ -1146,18 +1146,55 @@ class TextInput {
 
   static final TextInput _instance = TextInput._();
 
+  /// Adds an input control to the text input system.
+  ///
+  /// The added input control starts receiving text input state changes that
+  /// are delivered to all text input controls.
+  ///
+  /// Notice that visual text input control requests, such as showing and hiding
+  /// the input control, are not delivered by default. For that, an input control
+  /// needs to be set as the current input control.
+  ///
+  /// See also:
+  ///
+  ///  * [TextInput.setCurrentInputControl], a method to set the current visual
+  ///    text input control.
   static void addInputControl(TextInputControl control) {
     assert(control != PlatformTextInputControl.instance);
     _instance._inputControls.add(control);
   }
 
+  /// Removes an input control from the text input system.
+  ///
+  /// A removed input control stops receiving text input state changes. If the
+  /// input control was set as the current input control, the default platform
+  /// text input control is restored.
+  ///
+  /// See also:
+  ///
+  ///  * [TextInput.setCurrentInputControl], a method to set the current visual
+  ///    text input control.
   static void removeInputControl(TextInputControl control) {
     assert(control != PlatformTextInputControl.instance);
     if (control == _instance._currentControl)
-      setCurrentInputControl(null);
+      setCurrentInputControl(PlatformTextInputControl.instance);
     _instance._inputControls.remove(control);
   }
 
+  /// Sets the current visual text input control.
+  ///
+  /// The current text input control is the only input control that receives
+  /// visual text input control requests, such as showing and hiding the input
+  /// control.
+  ///
+  /// Notice that setting the current text input control as `null` removes the
+  /// visual text input control, but all installed input controls continue to
+  /// receive input state changes.
+  ///
+  /// See also:
+  ///
+  ///  * [PlatformTextInputControl.instance], the default platform text input
+  ///    control.
   static void setCurrentInputControl(TextInputControl ?newControl) {
     final TextInputControl? oldControl = _instance._currentControl;
     if (newControl == oldControl)
@@ -1167,7 +1204,7 @@ class TextInput {
     client?.didChangeInputControl(oldControl, newControl);
   }
 
-  TextInputControl? _currentControl;
+  TextInputControl? _currentControl = PlatformTextInputControl.instance;
   final List<TextInputControl> _inputControls = <TextInputControl>[];
   List<TextInputControl> get _allControls => <TextInputControl>[
     PlatformTextInputControl.instance, ..._inputControls
@@ -1343,15 +1380,6 @@ class TextInput {
     });
   }
 
-  // ### PROPOSAL: Delegate input _state_ changes to _all_ input controls so
-  // that they can keep their internal states in sync. This ensures that physical
-  // keyboards managed by the platform plugin and custom virtual keyboards work
-  // seamlessly together.
-  //
-  // - setClient()
-  // - clearClient()
-  // - updateConfig()
-  // - setEditingState()
   void _setClient(TextInputClient client, TextInputConfiguration configuration) {
     for (final TextInputControl control in _allControls)
       control.attach(client, configuration);
@@ -1377,14 +1405,6 @@ class TextInput {
       control.setEditingState(value);
   }
 
-  // ### PROPOSAL: Delegate _visual_ input changes _only_ to the current input
-  // control to avoid multiple input controls trying to show up.
-  //
-  // - show()
-  // - hide()
-  // - setEditableSizeAndTransform()
-  // - setComposingRect()
-  // - setStyle()
   void _show() {
     _currentControl?.show();
   }
