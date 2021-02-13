@@ -1139,11 +1139,29 @@ class TextInput {
     }());
   }
 
-  static void setInputControl(TextInputControl? control) {
-    _instance._customControl = control;
+  static final TextInput _instance = TextInput._();
+
+  static void addInputControl(TextInputControl control) {
+    assert(control != PlatformTextInputControl.instance);
+    _instance._inputControls.add(control);
   }
 
-  static final TextInput _instance = TextInput._();
+  static void removeInputControl(TextInputControl control) {
+    assert(control != PlatformTextInputControl.instance);
+    if (control == _instance._currentControl)
+      setCurrentInputControl(null);
+    _instance._inputControls.remove(control);
+  }
+
+  static void setCurrentInputControl(TextInputControl ?control) {
+    _instance._currentControl = control;
+  }
+
+  TextInputControl? _currentControl;
+  final List<TextInputControl> _inputControls = <TextInputControl>[];
+  List<TextInputControl> get _allControls => <TextInputControl>[
+    PlatformTextInputControl.instance, ..._inputControls
+  ];
 
   static const List<TextInputAction> _androidSupportedInputActions = <TextInputAction>[
     TextInputAction.none,
@@ -1229,15 +1247,6 @@ class TextInput {
   TextInputConnection? _currentConnection;
   late TextInputConfiguration _currentConfiguration;
 
-  TextInputControl? _customControl;
-  final TextInputControl _platformControl = _PlatformTextInputControl();
-  TextInputControl get _currentControl => _customControl ?? _platformControl;
-  List<TextInputControl> get _allControls => <TextInputControl>[
-    if (_customControl != null)
-      _customControl!,
-    _platformControl,
-  ];
-
   Future<dynamic> _handleTextInputInvocation(MethodCall methodCall) async {
     if (_currentConnection == null)
       return;
@@ -1278,8 +1287,9 @@ class TextInput {
       return;
     switch (method) {
       case 'TextInputClient.updateEditingState':
-        final value = TextEditingValue.fromJSON(args[1] as Map<String, dynamic>);
-        _customControl?.setEditingState(value);
+        final TextEditingValue value = TextEditingValue.fromJSON(args[1] as Map<String, dynamic>);
+        for (final TextInputControl control in _inputControls)
+          control.setEditingState(value);
         _currentConnection!._client.updateEditingValue(value);
         break;
       case 'TextInputClient.performAction':
@@ -1365,19 +1375,19 @@ class TextInput {
   // - setComposingRect()
   // - setStyle()
   void _show() {
-    _currentControl.show();
+    _currentControl?.show();
   }
 
   void _hide() {
-    _currentControl.hide();
+    _currentControl?.hide();
   }
 
   void _setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {
-    _currentControl.setEditableSizeAndTransform(editableBoxSize, transform);
+    _currentControl?.setEditableSizeAndTransform(editableBoxSize, transform);
   }
 
   void _setComposingTextRect(Rect rect) {
-    _currentControl.setComposingRect(rect);
+    _currentControl?.setComposingRect(rect);
   }
 
   void _setStyle({
@@ -1387,7 +1397,7 @@ class TextInput {
     required TextDirection textDirection,
     required TextAlign textAlign,
   }) {
-    _currentControl.setStyle(
+    _currentControl?.setStyle(
       fontFamily: fontFamily,
       fontSize: fontSize,
       fontWeight: fontWeight,
@@ -1399,7 +1409,7 @@ class TextInput {
   // NOTE: Autofill is not just visual, but presumably cannot be handled by
   // multiple text input sources at the same time...
   void _requestAutofill() {
-    _currentControl.requestAutofill();
+    _currentControl?.requestAutofill();
   }
 
   /// Finishes the current autofill context, and potentially saves the user
@@ -1452,7 +1462,7 @@ class TextInput {
   ///   topmost [AutofillGroup] is getting disposed.
   static void finishAutofillContext({ bool shouldSave = true }) {
     assert(shouldSave != null);
-    TextInput._instance._currentControl.finishAutofillContext(shouldSave: shouldSave);
+    TextInput._instance._currentControl?.finishAutofillContext(shouldSave: shouldSave);
   }
 
   // PROPOSAL: Custom text input controls need a way to communicate editing
@@ -1497,7 +1507,11 @@ abstract class TextInputControl implements TextInputHandler {
 }
 
 // PROPOSAL: The built-in method channel based platform text input control.
-class _PlatformTextInputControl implements TextInputControl {
+class PlatformTextInputControl implements TextInputControl {
+  PlatformTextInputControl._();
+
+  static final TextInputControl instance = PlatformTextInputControl._();
+
   MethodChannel get _channel => TextInput._instance._channel;
 
   @override
