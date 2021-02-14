@@ -1334,9 +1334,7 @@ class TextInput {
     switch (method) {
       case 'TextInputClient.updateEditingState':
         final TextEditingValue value = TextEditingValue.fromJSON(args[1] as Map<String, dynamic>);
-        for (final TextInputHandler handler in _inputHandlers)
-          handler.setEditingState(value);
-        _currentConnection!._client.updateEditingValue(value);
+        TextInput._instance._updateEditingValue(value, exclude: _PlatformTextInputControl.instance);
         break;
       case 'TextInputClient.performAction':
         _currentConnection!._client.performAction(_toTextInputAction(args[1] as String));
@@ -1438,6 +1436,14 @@ class TextInput {
 
   void _requestAutofill() {
     _inputControl?.requestAutofill();
+  }
+
+  void _updateEditingValue(TextEditingValue value, {TextInputHandler? exclude}) {
+    for (final TextInputHandler handler in _inputHandlers) {
+      if (handler != exclude)
+        handler.setEditingState(value);
+    }
+    _currentConnection!._client.updateEditingValue(value);
   }
 
   /// Finishes the current autofill context, and potentially saves the user
@@ -1543,11 +1549,7 @@ abstract class TextInputHandler {
   /// send editing value updates to the attached input client.
   @nonVirtual
   void updateEditingValue(TextEditingValue value) {
-    TextInput._instance._currentConnection?._client.updateEditingValue(value);
-    for (final TextInputHandler handler in TextInput._instance._inputHandlers) {
-      if (handler != this)
-        handler.setEditingState(value);
-    }
+    TextInput._instance._updateEditingValue(value, exclude: this);
   }
 }
 
