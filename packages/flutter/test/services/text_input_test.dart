@@ -420,6 +420,11 @@ class FakeTextInputClient implements TextInputClient {
   }
 
   TextInputConfiguration get configuration => const TextInputConfiguration();
+
+  @override
+  void didChangeInputControl(TextInputControl? oldControl, TextInputControl? newControl) {
+    latestMethodCall = 'didChangeInputControl';
+  }
 }
 
 class FakeTextChannel implements MethodChannel {
