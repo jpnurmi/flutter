@@ -1148,7 +1148,7 @@ class TextInput {
 
   /// Adds an input handler to the text input system.
   ///
-  /// The added input control starts receiving text input state changes that
+  /// The added input handler starts receiving text input state changes that
   /// are delivered to all text input handlers.
   ///
   /// See also:
