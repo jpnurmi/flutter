@@ -5,9 +5,11 @@
 
 import 'dart:convert' show utf8;
 import 'dart:convert' show jsonDecode;
+import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
+import 'package:vector_math/vector_math_64.dart';
 import '../flutter_test_alternative.dart';
 
 void main() {
@@ -376,6 +378,142 @@ void main() {
       isTrue,
     );
   });
+
+  group('TextInputHandler', () {
+    test('all handlers get called', () {
+      final FakeTextInputHandler handler1 = FakeTextInputHandler();
+      final FakeTextInputHandler handler2 = FakeTextInputHandler();
+      TextInput.addInputHandler(handler1);
+      TextInput.addInputHandler(handler2);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+
+      final List<String> expectedMethodCalls = <String>['attach'];
+      expect(handler1.methodCalls, expectedMethodCalls);
+      expect(handler2.methodCalls, expectedMethodCalls);
+
+      connection.updateConfig(const TextInputConfiguration());
+
+      expectedMethodCalls.add('updateConfig');
+      expect(handler1.methodCalls, expectedMethodCalls);
+      expect(handler2.methodCalls, expectedMethodCalls);
+
+      connection.setEditingState(TextEditingValue.empty);
+
+      expectedMethodCalls.add('setEditingState');
+      expect(handler1.methodCalls, expectedMethodCalls);
+      expect(handler2.methodCalls, expectedMethodCalls);
+
+      connection.close();
+
+      expectedMethodCalls.add('detach');
+      expect(handler1.methodCalls, expectedMethodCalls);
+      expect(handler2.methodCalls, expectedMethodCalls);
+    });
+
+    test('editing value updates are delivered to other handlers', () {
+      final FakeTextInputHandler handler1 = FakeTextInputHandler();
+      final FakeTextInputHandler handler2 = FakeTextInputHandler();
+      TextInput.addInputHandler(handler1);
+      TextInput.addInputHandler(handler2);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      TextInput.attach(client, const TextInputConfiguration());
+
+      handler1.updateEditingValue(TextEditingValue.empty);
+      expect(handler1.methodCalls, <String>['attach']);
+      expect(handler2.methodCalls, <String>['attach', 'setEditingState']);
+
+      handler2.updateEditingValue(TextEditingValue.empty);
+      expect(handler1.methodCalls, <String>['attach', 'setEditingState']);
+      expect(handler2.methodCalls, <String>['attach', 'setEditingState']);
+    });
+
+    test('duplicate handlers are rejected', () {
+      final FakeTextInputHandler handler = FakeTextInputHandler();
+      TextInput.addInputHandler(handler);
+      TextInput.addInputHandler(handler);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      const TextInputConfiguration configuration = TextInputConfiguration();
+      TextInput.attach(client, configuration);
+      expect(handler.methodCalls, <String>['attach']);
+    });
+
+    test('duplicate handlers are rejected', () {
+      final FakeTextInputHandler handler1 = FakeTextInputHandler();
+      TextInput.addInputHandler(handler1);
+      TextInput.addInputHandler(handler1);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      const TextInputConfiguration configuration = TextInputConfiguration();
+      TextInput.attach(client, configuration);
+      expect(handler1.methodCalls, <String>['attach']);
+    });
+  });
+
+  group('TextInputControl', () {
+    tearDown(() {
+      TextInput.restorePlatformInputControl();
+    });
+
+    test('custom input control', () async {
+      final FakeTextInputControl control = FakeTextInputControl();
+      TextInput.setInputControl(control);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+
+      final List<String> expectedMethodCalls = <String>['attach'];
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.show();
+      expectedMethodCalls.add('show');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.setComposingRect(Rect.zero);
+      expectedMethodCalls.add('setComposingRect');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.setEditableSizeAndTransform(Size.zero, Matrix4.identity());
+      expectedMethodCalls.add('setEditableSizeAndTransform');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.setStyle(
+        fontFamily: null,
+        fontSize: null,
+        fontWeight: null,
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.left,
+      );
+      expectedMethodCalls.add('setStyle');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.close();
+      expectedMethodCalls.add('detach');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      expectedMethodCalls.add('hide');
+      final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized() as TestWidgetsFlutterBinding;
+      await binding.runAsync(() async {});
+      await expectLater(control.methodCalls, expectedMethodCalls);
+    });
+
+    test('change input control', () async {
+      final FakeTextInputControl control = FakeTextInputControl();
+      TextInput.setInputControl(control);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+
+      TextInput.setInputControl(null);
+      expect(client.latestMethodCall, 'didChangeInputControl');
+
+      connection.show();
+      expect(client.latestMethodCall, 'didChangeInputControl');
+    });
+  });
 }
 
 class FakeTextInputClient implements TextInputClient {
@@ -490,5 +628,94 @@ class FakeTextChannel implements MethodChannel {
     if (hasError) {
       fail('Calls did not match.');
     }
+  }
+}
+
+class FakeTextInputHandler extends TextInputHandler {
+  final List<String> methodCalls = <String>[];
+
+  @override
+  void attach(TextInputClient client, TextInputConfiguration configuration) {
+    methodCalls.add('attach');
+  }
+
+  @override
+  void detach(TextInputClient client) {
+    methodCalls.add('detach');
+  }
+
+  @override
+  void setEditingState(TextEditingValue value) {
+    methodCalls.add('setEditingState');
+  }
+
+  @override
+  void updateConfig(TextInputConfiguration configuration) {
+    methodCalls.add('updateConfig');
+  }
+}
+
+class FakeTextInputControl extends TextInputControl {
+  final List<String> methodCalls = <String>[];
+
+  @override
+  void attach(TextInputClient client, TextInputConfiguration configuration) {
+    methodCalls.add('attach');
+  }
+
+  @override
+  void detach(TextInputClient client) {
+    methodCalls.add('detach');
+  }
+
+  @override
+  void setEditingState(TextEditingValue value) {
+    methodCalls.add('setEditingState');
+  }
+
+  @override
+  void updateConfig(TextInputConfiguration configuration) {
+    methodCalls.add('updateConfig');
+  }
+
+  @override
+  void show() {
+    methodCalls.add('show');
+  }
+
+  @override
+  void hide() {
+    methodCalls.add('hide');
+  }
+
+  @override
+  void setComposingRect(Rect rect) {
+    methodCalls.add('setComposingRect');
+  }
+
+  @override
+  void setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {
+    methodCalls.add('setEditableSizeAndTransform');
+  }
+
+  @override
+  void setStyle({
+    required String? fontFamily,
+    required double? fontSize,
+    required FontWeight? fontWeight,
+    required TextDirection textDirection,
+    required TextAlign textAlign,
+  }) {
+    methodCalls.add('setStyle');
+  }
+
+  @override
+  void finishAutofillContext({bool shouldSave = true}) {
+    methodCalls.add('finishAutofillContext');
+  }
+
+  @override
+  void requestAutofill() {
+    methodCalls.add('requestAutofill');
   }
 }

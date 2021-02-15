@@ -1155,7 +1155,7 @@ class TextInput {
   ///
   ///  * [TextInputHandler], an interface for implementing text input handlers.
   static void addInputHandler(TextInputHandler handler) {
-    if (handler != _PlatformTextInputControl.instance && !_instance._inputHandlers.contains(handler))
+    if (!_instance._inputHandlers.contains(handler))
       _instance._inputHandlers.add(handler);
   }
 
@@ -1163,8 +1163,7 @@ class TextInput {
   ///
   /// A removed input handler stops receiving text input state changes.
   static void removeInputHandler(TextInputHandler handler) {
-    if (handler != _PlatformTextInputControl.instance)
-      _instance._inputHandlers.remove(handler);
+    _instance._inputHandlers.remove(handler);
   }
 
   /// Sets the current text input control.
@@ -1439,6 +1438,9 @@ class TextInput {
   }
 
   void _updateEditingValue(TextEditingValue value, {TextInputHandler? exclude}) {
+    if (_currentConnection == null)
+      return;
+
     for (final TextInputHandler handler in _inputHandlers) {
       if (handler != exclude)
         handler.setEditingState(value);
