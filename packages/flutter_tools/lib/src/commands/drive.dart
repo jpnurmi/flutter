@@ -142,7 +142,9 @@ class DriveCommand extends RunCommandBase {
   // `pub` must always be run due to the test script running from source,
   // even if an application binary is used.
   @override
-  bool get shouldRunPub => true;
+  bool get shouldRunPub => super.shouldRunPub || !hasPackages;
+
+  bool get hasPackages => globals.fs.file('.packages').existsSync();
 
   FlutterDriverFactory _flutterDriverFactory;
   final FileSystem _fileSystem;
