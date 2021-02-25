@@ -1639,6 +1639,8 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     _offset.addListener(markNeedsPaint);
     _showHideCursor();
     _showCursor.addListener(_showHideCursor);
+    if (_listenerAttached)
+      RawKeyboard.instance.addListener(_handleKeyEvent);
   }
 
   @override
@@ -1817,7 +1819,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
   }
 
   /// An estimate of the height of a line in the text. See [TextPainter.preferredLineHeight].
-  /// This does not required the layout to be updated.
+  /// This does not require the layout to be updated.
   double get preferredLineHeight => _textPainter.preferredLineHeight;
 
   double _preferredHeight(double width) {
@@ -2708,21 +2710,22 @@ class _FloatingCursorPainter extends RenderEditablePainter {
     caretRect = caretRect.shift(renderEditable._paintOffset);
     final Rect integralRect = caretRect.shift(renderEditable._snapToPhysicalPixel(caretRect.topLeft));
 
-    final Radius? radius = cursorRadius;
-    caretPaint.color = caretColor;
-    if (radius == null) {
-      canvas.drawRect(integralRect, caretPaint);
-    } else {
-      final RRect caretRRect = RRect.fromRectAndRadius(integralRect, radius);
-      canvas.drawRRect(caretRRect, caretPaint);
+    if (shouldPaint) {
+      final Radius? radius = cursorRadius;
+      caretPaint.color = caretColor;
+      if (radius == null) {
+        canvas.drawRect(integralRect, caretPaint);
+      } else {
+        final RRect caretRRect = RRect.fromRectAndRadius(integralRect, radius);
+        canvas.drawRRect(caretRRect, caretPaint);
+      }
     }
     caretPaintCallback(integralRect);
   }
 
   @override
   void paint(Canvas canvas, Size size, RenderEditable renderEditable) {
-    if (!shouldPaint)
-      return;
+    // Compute the caret location even when `shouldPaint` is false.
 
     assert(renderEditable != null);
     final TextSelection? selection = renderEditable.selection;
@@ -2747,7 +2750,7 @@ class _FloatingCursorPainter extends RenderEditablePainter {
 
     final Color? floatingCursorColor = this.caretColor?.withOpacity(0.75);
     // Floating Cursor.
-    if (floatingCursorRect == null || floatingCursorColor == null)
+    if (floatingCursorRect == null || floatingCursorColor == null || !shouldPaint)
       return;
 
     canvas.drawRRect(
