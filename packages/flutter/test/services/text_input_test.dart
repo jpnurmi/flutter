@@ -476,7 +476,7 @@ void main() {
       TextInput.setInputControl(control);
 
       final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+      TextInput.attach(client, const TextInputConfiguration());
 
       fakeTextChannel.outgoingCalls.clear();
 
