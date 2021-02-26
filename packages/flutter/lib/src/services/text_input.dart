@@ -1175,9 +1175,9 @@ class TextInput {
   /// The text input control receives visual text input control requests, such
   /// as showing and hiding the input control, from the framework.
   ///
-  /// Notice that setting the current text input control as `null` removes the
-  /// visual text input control, but all installed input handlers continue to
-  /// receive input state changes.
+  /// Setting the current text input control as `null` removes the visual text
+  /// input control, but all installed input handlers continue to receive input
+  /// state changes.
   ///
   /// See also:
   ///
@@ -1514,7 +1514,7 @@ class TextInput {
 /// The input handler can be installed and removed with [TextInput.addInputHandler]
 /// and [TextInput.removeInputHandler], respectively.
 ///
-/// Notice that the [TextInputHandler] class must be extended. [TextInputHandler]
+/// The [TextInputHandler] class must be extended. [TextInputHandler]
 /// implementations should call [TextInputHandler.updateEditingValue] to send
 /// editing value updates to the attached input client.
 ///
@@ -1568,15 +1568,130 @@ abstract class TextInputHandler {
 /// the default platform text input control can be restored with
 /// [TextInput.restorePlatformInputControl].
 ///
-/// Notice that the [TextInputControl] class must be extended. [TextInputControl]
+/// The [TextInputControl] class must be extended. [TextInputControl]
 /// implementations should call [TextInputHandler.updateEditingValue] to send
 /// user input to the attached input client.
 ///
-/// The following example illustrates a basic [TextInputControl] implentation:
+/// {@tool dartpad --template=freeform}
+/// This example illustrates a basic [TextInputControl] implementation:
 ///
+/// ```dart imports
+/// import 'package:flutter/foundation.dart';
+/// import 'package:flutter/material.dart';
+/// import 'package:flutter/services.dart';
+/// ```
 /// ```dart
-/// class CustomInputControl extends TextInputControl {
-///   var _editingState = TextEditingValue();
+/// void main() => runApp(MyApp());
+///
+/// class MyApp extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) {
+///     return MaterialApp(
+///       home: MyStatefulWidget(),
+///     );
+///   }
+/// }
+///
+/// class MyStatefulWidget extends StatefulWidget {
+///   MyStatefulWidget({Key? key}) : super(key: key);
+///
+///   @override
+///   MyStatefulWidgetState createState() => MyStatefulWidgetState();
+/// }
+///
+/// class MyStatefulWidgetState extends State<MyStatefulWidget> {
+///   final _controller = TextEditingController();
+///   final _focusNode = FocusNode();
+///
+///   @override
+///   void dispose() {
+///     super.dispose();
+///     _controller.dispose();
+///     _focusNode.dispose();
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return Scaffold(
+///       body: Center(
+///         child: TextField(
+///           autofocus: true,
+///           controller: _controller,
+///           focusNode: _focusNode,
+///           decoration: InputDecoration(
+///             suffix: IconButton(
+///               icon: Icon(Icons.clear),
+///               tooltip: 'Clear and unfocus',
+///               onPressed: () {
+///                 _controller.clear();
+///                 _focusNode.unfocus();
+///               },
+///             ),
+///           ),
+///         ),
+///       ),
+///       bottomSheet: MyVirtualKeyboard(),
+///     );
+///   }
+/// }
+///
+/// class MyVirtualKeyboard extends StatefulWidget {
+///   @override
+///   MyVirtualKeyboardState createState() => MyVirtualKeyboardState();
+/// }
+///
+/// class MyVirtualKeyboardState extends State<MyVirtualKeyboard> {
+///   final _inputControl = MyTextInputControl();
+///
+///   @override
+///   void initState() {
+///     super.initState();
+///     _inputControl.register();
+///   }
+///
+///   @override
+///   void dispose() {
+///     super.dispose();
+///     _inputControl.unregister();
+///   }
+///
+///   void _handleKeyPress(String key) {
+///     _inputControl.processUserInput(key);
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return ValueListenableBuilder<bool>(
+///       valueListenable: _inputControl.visible,
+///       builder: (_, visible, __) {
+///         return Visibility(
+///           visible: visible,
+///           child: ValueListenableBuilder<bool>(
+///             valueListenable: _inputControl.attached,
+///             builder: (_, attached, __) {
+///               return FocusScope(
+///                 canRequestFocus: false,
+///                 child: Row(
+///                   mainAxisAlignment: MainAxisAlignment.center,
+///                   children: [
+///                     for (final key in ['A', 'B', 'C'])
+///                       ElevatedButton(
+///                         child: Text(key),
+///                         onPressed: attached ? () => _handleKeyPress(key) : null,
+///                       ),
+///                   ],
+///                 ),
+///               );
+///             },
+///           ),
+///         );
+///       },
+///     );
+///   }
+/// }
+///
+/// class MyTextInputControl extends TextInputControl {
+///   TextEditingValue _editingState = TextEditingValue();
 ///   final _attached = ValueNotifier<bool>(false);
 ///   final _visible = ValueNotifier<bool>(false);
 ///
@@ -1633,6 +1748,7 @@ abstract class TextInputHandler {
 ///   }
 /// }
 /// ```
+/// {@end-tool}
 ///
 /// See also:
 ///
