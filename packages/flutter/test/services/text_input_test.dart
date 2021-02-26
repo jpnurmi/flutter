@@ -380,6 +380,10 @@ void main() {
   });
 
   group('TextInputHandler', () {
+    tearDown(() {
+      TextInputConnection.debugResetId();
+    });
+
     test('all handlers get called', () {
       final FakeTextInputHandler handler1 = FakeTextInputHandler();
       final FakeTextInputHandler handler2 = FakeTextInputHandler();
@@ -454,11 +458,36 @@ void main() {
   });
 
   group('TextInputControl', () {
-    tearDown(() {
-      TextInput.restorePlatformInputControl();
+    late FakeTextChannel fakeTextChannel;
+
+    setUp(() {
+      fakeTextChannel = FakeTextChannel((MethodCall call) async {});
+      TextInput.setChannel(fakeTextChannel);
     });
 
-    test('custom input control', () async {
+    tearDown(() {
+      TextInput.restorePlatformInputControl();
+      TextInputConnection.debugResetId();
+      TextInput.setChannel(SystemChannels.textInput);
+    });
+
+    test('custom input control does not interfere with platform input', () {
+      final FakeTextInputControl control = FakeTextInputControl();
+      TextInput.setInputControl(control);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+
+      fakeTextChannel.outgoingCalls.clear();
+
+      fakeTextChannel.incoming!(MethodCall('TextInputClient.updateEditingState', <dynamic>[1, TextEditingValue.empty.toJSON()]));
+
+      expect(client.latestMethodCall, 'updateEditingValue');
+      expect(control.methodCalls, <String>['attach', 'setEditingState']);
+      expect(fakeTextChannel.outgoingCalls, isEmpty);
+    });
+
+    test('custom input control receives requests', () async {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 

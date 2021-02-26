@@ -1166,7 +1166,8 @@ class TextInput {
   ///
   /// A removed input handler stops receiving text input state changes.
   static void removeInputHandler(TextInputHandler handler) {
-    _instance._inputHandlers.remove(handler);
+    if (handler != _PlatformTextInputControl.instance)
+      _instance._inputHandlers.remove(handler);
   }
 
   /// Sets the current text input control.
