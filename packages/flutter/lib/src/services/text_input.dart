@@ -1183,7 +1183,7 @@ class TextInput {
   ///  * [TextInputControl], an interface for implementing text input controls.
   ///  * [TextInput.restorePlatformInputControl], a method to restore the default
   ///    platform text input control.
-  static void setInputControl(TextInputControl ?newControl) {
+  static void setInputControl(TextInputControl? newControl) {
     final TextInputControl? oldControl = _instance._inputControl;
     if (newControl == oldControl)
       return;
@@ -1208,7 +1208,7 @@ class TextInput {
 
   TextInputControl? _inputControl = _PlatformTextInputControl.instance;
   final Set<TextInputHandler> _inputHandlers = <TextInputHandler>{
-    _PlatformTextInputControl.instance
+    _PlatformTextInputControl.instance,
   };
 
   static const List<TextInputAction> _androidSupportedInputActions = <TextInputAction>[
