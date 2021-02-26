@@ -1666,23 +1666,18 @@ abstract class TextInputHandler {
 ///       builder: (_, visible, __) {
 ///         return Visibility(
 ///           visible: visible,
-///           child: ValueListenableBuilder<bool>(
-///             valueListenable: _inputControl.attached,
-///             builder: (_, attached, __) {
-///               return FocusScope(
-///                 canRequestFocus: false,
-///                 child: Row(
-///                   mainAxisAlignment: MainAxisAlignment.center,
-///                   children: [
-///                     for (final key in ['A', 'B', 'C'])
-///                       ElevatedButton(
-///                         child: Text(key),
-///                         onPressed: attached ? () => _handleKeyPress(key) : null,
-///                       ),
-///                   ],
-///                 ),
-///               );
-///             },
+///           child: FocusScope(
+///             canRequestFocus: false,
+///             child: Row(
+///               mainAxisAlignment: MainAxisAlignment.center,
+///               children: [
+///                 for (final key in ['A', 'B', 'C'])
+///                   ElevatedButton(
+///                     child: Text(key),
+///                     onPressed: () => _handleKeyPress(key),
+///                   ),
+///               ],
+///             ),
 ///           ),
 ///         );
 ///       },
@@ -1692,11 +1687,7 @@ abstract class TextInputHandler {
 ///
 /// class MyTextInputControl extends TextInputControl {
 ///   TextEditingValue _editingState = TextEditingValue();
-///   final _attached = ValueNotifier<bool>(false);
 ///   final _visible = ValueNotifier<bool>(false);
-///
-///   /// The input control's attached state for updating the visual presentation.
-///   ValueListenable<bool> get attached => _attached;
 ///
 ///   /// The input control's visibility state for updating the visual presentation.
 ///   ValueListenable<bool> get visible => _visible;
@@ -1706,12 +1697,6 @@ abstract class TextInputHandler {
 ///
 ///   /// Restore the original platform input control.
 ///   void unregister() => TextInput.restorePlatformInputControl();
-///
-///   @override
-///   void attach(_, __) => _attached.value = true;
-///
-///   @override
-///   void detach(_) => _attached.value = false;
 ///
 ///   @override
 ///   void show() => _visible.value = true;
