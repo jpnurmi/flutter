@@ -1159,8 +1159,7 @@ class TextInput {
   ///
   ///  * [TextInputHandler], an interface for implementing text input handlers.
   static void addInputHandler(TextInputHandler handler) {
-    if (!_instance._inputHandlers.contains(handler))
-      _instance._inputHandlers.add(handler);
+    _instance._inputHandlers.add(handler);
   }
 
   /// Removes an input handler from the text input system.
@@ -1208,9 +1207,9 @@ class TextInput {
   }
 
   TextInputControl? _inputControl = _PlatformTextInputControl.instance;
-  final List<TextInputHandler> _inputHandlers = <TextInputHandler>[
+  final Set<TextInputHandler> _inputHandlers = <TextInputHandler>{
     _PlatformTextInputControl.instance
-  ];
+  };
 
   static const List<TextInputAction> _androidSupportedInputActions = <TextInputAction>[
     TextInputAction.none,
