@@ -5,7 +5,7 @@
 // @dart = 2.8
 
 import 'dart:async';
-import 'dart:io' as io; // ignore: dart_io_import;
+import 'dart:io' as io; // flutter_ignore: dart_io_import;
 
 import 'package:dds/dds.dart';
 import 'package:meta/meta.dart';
@@ -272,7 +272,7 @@ class FlutterTesterTestDevice extends TestDevice {
 
   void _pipeStandardStreamsToConsole({
     @required Process process,
-    @required Future<void> reportObservatoryUri(Uri uri),
+    @required Future<void> Function(Uri uri) reportObservatoryUri,
   }) {
     const String observatoryString = 'Observatory listening on ';
     for (final Stream<List<int>> stream in <Stream<List<int>>>[

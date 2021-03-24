@@ -8,9 +8,8 @@ import 'dart:convert' show jsonDecode;
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:vector_math/vector_math_64.dart';
-import '../flutter_test_alternative.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -136,7 +135,7 @@ void main() {
     test('basic structure', () async {
       const TextInputType text = TextInputType.text;
       const TextInputType number = TextInputType.number;
-      const TextInputType number2 = TextInputType.numberWithOptions(); // ignore: use_named_constants
+      const TextInputType number2 = TextInputType.numberWithOptions();
       const TextInputType signed = TextInputType.numberWithOptions(signed: true);
       const TextInputType signed2 = TextInputType.numberWithOptions(signed: true);
       const TextInputType decimal = TextInputType.numberWithOptions(decimal: true);

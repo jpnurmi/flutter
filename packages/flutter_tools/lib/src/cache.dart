@@ -934,6 +934,7 @@ abstract class EngineCachedArtifact extends CachedArtifact {
       final File frameworkZip = fileSystem.file(fileSystem.path.join(dir.path, 'FlutterMacOS.framework.zip'));
       if (frameworkZip.existsSync()) {
         final Directory framework = fileSystem.directory(fileSystem.path.join(dir.path, 'FlutterMacOS.framework'));
+        ErrorHandlingFileSystem.deleteIfExists(framework, recursive: true);
         framework.createSync();
         operatingSystemUtils.unzip(frameworkZip, framework);
       }
@@ -1292,11 +1293,13 @@ class GradleWrapper extends CachedArtifact {
     OperatingSystemUtils operatingSystemUtils,
   ) async {
     final Uri archiveUri = _toStorageUri(version);
-    await  artifactUpdater.downloadZippedTarball('Downloading Gradle Wrapper...', archiveUri, location);
+    await artifactUpdater.downloadZippedTarball('Downloading Gradle Wrapper...', archiveUri, location);
     // Delete property file, allowing templates to provide it.
-    fileSystem.file(fileSystem.path.join(location.path, 'gradle', 'wrapper', 'gradle-wrapper.properties')).deleteSync();
     // Remove NOTICE file. Should not be part of the template.
-    fileSystem.file(fileSystem.path.join(location.path, 'NOTICE')).deleteSync();
+    final File propertiesFile = fileSystem.file(fileSystem.path.join(location.path, 'gradle', 'wrapper', 'gradle-wrapper.properties'));
+    final File noticeFile = fileSystem.file(fileSystem.path.join(location.path, 'NOTICE'));
+    ErrorHandlingFileSystem.deleteIfExists(propertiesFile);
+    ErrorHandlingFileSystem.deleteIfExists(noticeFile);
   }
 
   @override
@@ -1836,7 +1839,7 @@ class ArtifactUpdater {
         if (retries == 0) {
           throwToolExit(
             'Flutter could not download and/or extract $url. Ensure you have '
-            'network connectivity and all of the required dependencies listed at'
+            'network connectivity and all of the required dependencies listed at '
             'flutter.dev/setup.\nThe original exception was: $err.'
           );
         }

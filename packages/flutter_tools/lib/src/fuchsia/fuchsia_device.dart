@@ -181,8 +181,11 @@ class FuchsiaDevices extends PollingDeviceDiscovery {
     if (!_fuchsiaWorkflow.canListDevices) {
       return <Device>[];
     }
-    final List<String> text = (await _fuchsiaSdk.listDevices(timeout: timeout))
-      ?.split('\n');
+    // TODO(omerlevran): Remove once soft transition is complete fxb/67602.
+    final List<String> text = (await _fuchsiaSdk.listDevices(
+      timeout: timeout,
+      useDeviceFinder: _fuchsiaWorkflow.shouldUseDeviceFinder,
+    ))?.split('\n');
     if (text == null || text.isEmpty) {
       return <Device>[];
     }
@@ -208,9 +211,18 @@ class FuchsiaDevices extends PollingDeviceDiscovery {
       return null;
     }
     final String name = words[1];
-    final String resolvedHost = await _fuchsiaSdk.fuchsiaDevFinder.resolve(
-      name,
-    );
+    String resolvedHost;
+
+    // TODO(omerlevran): Remove once soft transition is complete fxb/67602.
+    if (_fuchsiaWorkflow.shouldUseDeviceFinder) {
+      // TODO(omerlevran): Add support for resolve on the FuchsiaSdk Object.
+      resolvedHost = await _fuchsiaSdk.fuchsiaDevFinder.resolve(
+        name,
+      );
+    } else {
+      // TODO(omerlevran): Add support for resolve on the FuchsiaSdk Object.
+      resolvedHost = await _fuchsiaSdk.fuchsiaFfx.resolve(name);
+    }
     if (resolvedHost == null) {
       _logger.printError('Failed to resolve host for Fuchsia device `$name`');
       return null;
@@ -610,13 +622,11 @@ class FuchsiaDevice extends Device {
     final RunResult findResult = await shell(findCommand);
     if (findResult.exitCode != 0) {
       throwToolExit("'$findCommand' on device $name failed. stderr: '${findResult.stderr}'");
-      return null;
     }
     final String findOutput = findResult.stdout;
     if (findOutput.trim() == '') {
       throwToolExit(
           'No Dart Observatories found. Are you running a debug build?');
-      return null;
     }
     final List<int> ports = <int>[];
     for (final String path in findOutput.split('\n')) {
@@ -627,7 +637,6 @@ class FuchsiaDevice extends Device {
       final RunResult lsResult = await shell(lsCommand);
       if (lsResult.exitCode != 0) {
         throwToolExit("'$lsCommand' on device $name failed");
-        return null;
       }
       final String lsOutput = lsResult.stdout;
       for (final String line in lsOutput.split('\n')) {
@@ -649,7 +658,7 @@ class FuchsiaDevice extends Device {
       throwToolExit('Cannot interact with device. No ssh config.\n'
                     'Try setting FUCHSIA_SSH_CONFIG or FUCHSIA_BUILD_DIR.');
     }
-    return await globals.processUtils.run(<String>[
+    return globals.processUtils.run(<String>[
       'ssh',
       '-F',
       globals.fuchsiaArtifacts.sshConfig.absolute.path,
@@ -664,7 +673,7 @@ class FuchsiaDevice extends Device {
       throwToolExit('Cannot interact with device. No ssh config.\n'
                     'Try setting FUCHSIA_SSH_CONFIG or FUCHSIA_BUILD_DIR.');
     }
-    return await globals.processUtils.run(<String>[
+    return globals.processUtils.run(<String>[
       'scp',
       '-F',
       globals.fuchsiaArtifacts.sshConfig.absolute.path,
@@ -703,7 +712,6 @@ class FuchsiaDevice extends Device {
       }
     }
     throwToolExit('No ports found running $isolateName');
-    return null;
   }
 
   FuchsiaIsolateDiscoveryProtocol getIsolateDiscoveryProtocol(String isolateName) {
