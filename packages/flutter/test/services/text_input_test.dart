@@ -378,84 +378,6 @@ void main() {
     );
   });
 
-  group('TextInputHandler', () {
-    tearDown(() {
-      TextInputConnection.debugResetId();
-    });
-
-    test('all handlers get called', () {
-      final FakeTextInputHandler handler1 = FakeTextInputHandler();
-      final FakeTextInputHandler handler2 = FakeTextInputHandler();
-      TextInput.addInputHandler(handler1);
-      TextInput.addInputHandler(handler2);
-
-      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
-
-      final List<String> expectedMethodCalls = <String>['attach'];
-      expect(handler1.methodCalls, expectedMethodCalls);
-      expect(handler2.methodCalls, expectedMethodCalls);
-
-      connection.updateConfig(const TextInputConfiguration());
-
-      expectedMethodCalls.add('updateConfig');
-      expect(handler1.methodCalls, expectedMethodCalls);
-      expect(handler2.methodCalls, expectedMethodCalls);
-
-      connection.setEditingState(TextEditingValue.empty);
-
-      expectedMethodCalls.add('setEditingState');
-      expect(handler1.methodCalls, expectedMethodCalls);
-      expect(handler2.methodCalls, expectedMethodCalls);
-
-      connection.close();
-
-      expectedMethodCalls.add('detach');
-      expect(handler1.methodCalls, expectedMethodCalls);
-      expect(handler2.methodCalls, expectedMethodCalls);
-    });
-
-    test('editing value updates are delivered to other handlers', () {
-      final FakeTextInputHandler handler1 = FakeTextInputHandler();
-      final FakeTextInputHandler handler2 = FakeTextInputHandler();
-      TextInput.addInputHandler(handler1);
-      TextInput.addInputHandler(handler2);
-
-      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      TextInput.attach(client, const TextInputConfiguration());
-
-      handler1.updateEditingValue(TextEditingValue.empty);
-      expect(handler1.methodCalls, <String>['attach']);
-      expect(handler2.methodCalls, <String>['attach', 'setEditingState']);
-
-      handler2.updateEditingValue(TextEditingValue.empty);
-      expect(handler1.methodCalls, <String>['attach', 'setEditingState']);
-      expect(handler2.methodCalls, <String>['attach', 'setEditingState']);
-    });
-
-    test('duplicate handlers are rejected', () {
-      final FakeTextInputHandler handler = FakeTextInputHandler();
-      TextInput.addInputHandler(handler);
-      TextInput.addInputHandler(handler);
-
-      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      const TextInputConfiguration configuration = TextInputConfiguration();
-      TextInput.attach(client, configuration);
-      expect(handler.methodCalls, <String>['attach']);
-    });
-
-    test('duplicate handlers are rejected', () {
-      final FakeTextInputHandler handler1 = FakeTextInputHandler();
-      TextInput.addInputHandler(handler1);
-      TextInput.addInputHandler(handler1);
-
-      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      const TextInputConfiguration configuration = TextInputConfiguration();
-      TextInput.attach(client, configuration);
-      expect(handler1.methodCalls, <String>['attach']);
-    });
-  });
-
   group('TextInputControl', () {
     late FakeTextChannel fakeTextChannel;
 
@@ -470,7 +392,45 @@ void main() {
       TextInput.setChannel(SystemChannels.textInput);
     });
 
-    test('custom input control does not interfere with platform input', () {
+    test('gets attached and detached', () {
+      final FakeTextInputControl control = FakeTextInputControl();
+      TextInput.setInputControl(control);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+
+      final List<String> expectedMethodCalls = <String>['attach'];
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.close();
+      expectedMethodCalls.add('detach');
+      expect(control.methodCalls, expectedMethodCalls);
+    });
+
+    test('receives text input state changes', () {
+      final FakeTextInputControl control = FakeTextInputControl();
+      TextInput.setInputControl(control);
+
+      final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
+      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+      control.methodCalls.clear();
+
+      final List<String> expectedMethodCalls = <String>[];
+
+      connection.updateConfig(const TextInputConfiguration());
+      expectedMethodCalls.add('updateConfig');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.setEditingState(TextEditingValue.empty);
+      expectedMethodCalls.add('setEditingState');
+      expect(control.methodCalls, expectedMethodCalls);
+
+      connection.close();
+      expectedMethodCalls.add('detach');
+      expect(control.methodCalls, expectedMethodCalls);
+    });
+
+    test('does not interfere with platform text input', () {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 
@@ -486,7 +446,7 @@ void main() {
       expect(fakeTextChannel.outgoingCalls, isEmpty);
     });
 
-    test('custom input control receives requests', () async {
+    test('receives visual input control requests', () async {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 
@@ -528,7 +488,7 @@ void main() {
       await expectLater(control.methodCalls, expectedMethodCalls);
     });
 
-    test('change input control', () async {
+    test('notifies changes to the attached client', () async {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 
@@ -656,30 +616,6 @@ class FakeTextChannel implements MethodChannel {
     if (hasError) {
       fail('Calls did not match.');
     }
-  }
-}
-
-class FakeTextInputHandler extends TextInputHandler {
-  final List<String> methodCalls = <String>[];
-
-  @override
-  void attach(TextInputClient client, TextInputConfiguration configuration) {
-    methodCalls.add('attach');
-  }
-
-  @override
-  void detach(TextInputClient client) {
-    methodCalls.add('detach');
-  }
-
-  @override
-  void setEditingState(TextEditingValue value) {
-    methodCalls.add('setEditingState');
-  }
-
-  @override
-  void updateConfig(TextInputConfiguration configuration) {
-    methodCalls.add('updateConfig');
   }
 }
 
