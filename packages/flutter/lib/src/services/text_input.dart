@@ -1573,27 +1573,29 @@ class TextInput {
 /// import 'package:flutter/services.dart';
 /// ```
 /// ```dart
-/// void main() => runApp(MyApp());
+/// void main() => runApp(const MyApp());
 ///
 /// class MyApp extends StatelessWidget {
+///   const MyApp({Key? key}) : super(key: key);
+///
 ///   @override
 ///   Widget build(BuildContext context) {
-///     return MaterialApp(
+///     return const MaterialApp(
 ///       home: MyStatefulWidget(),
 ///     );
 ///   }
 /// }
 ///
 /// class MyStatefulWidget extends StatefulWidget {
-///   MyStatefulWidget({Key? key}) : super(key: key);
+///   const MyStatefulWidget({Key? key}) : super(key: key);
 ///
 ///   @override
 ///   MyStatefulWidgetState createState() => MyStatefulWidgetState();
 /// }
 ///
 /// class MyStatefulWidgetState extends State<MyStatefulWidget> {
-///   final _controller = TextEditingController();
-///   final _focusNode = FocusNode();
+///   final TextEditingController _controller = TextEditingController();
+///   final FocusNode _focusNode = FocusNode();
 ///
 ///   @override
 ///   void dispose() {
@@ -1612,7 +1614,7 @@ class TextInput {
 ///           focusNode: _focusNode,
 ///           decoration: InputDecoration(
 ///             suffix: IconButton(
-///               icon: Icon(Icons.clear),
+///               icon: const Icon(Icons.clear),
 ///               tooltip: 'Clear and unfocus',
 ///               onPressed: () {
 ///                 _controller.clear();
@@ -1622,18 +1624,20 @@ class TextInput {
 ///           ),
 ///         ),
 ///       ),
-///       bottomSheet: MyVirtualKeyboard(),
+///       bottomSheet: const MyVirtualKeyboard(),
 ///     );
 ///   }
 /// }
 ///
 /// class MyVirtualKeyboard extends StatefulWidget {
+///   const MyVirtualKeyboard({Key? key}) : super(key: key);
+///
 ///   @override
 ///   MyVirtualKeyboardState createState() => MyVirtualKeyboardState();
 /// }
 ///
 /// class MyVirtualKeyboardState extends State<MyVirtualKeyboard> {
-///   final _inputControl = MyTextInputControl();
+///   final MyTextInputControl _inputControl = MyTextInputControl();
 ///
 ///   @override
 ///   void initState() {
@@ -1655,15 +1659,15 @@ class TextInput {
 ///   Widget build(BuildContext context) {
 ///     return ValueListenableBuilder<bool>(
 ///       valueListenable: _inputControl.visible,
-///       builder: (_, visible, __) {
+///       builder: (_, bool visible, __) {
 ///         return Visibility(
 ///           visible: visible,
 ///           child: FocusScope(
 ///             canRequestFocus: false,
 ///             child: Row(
 ///               mainAxisAlignment: MainAxisAlignment.center,
-///               children: [
-///                 for (final key in ['A', 'B', 'C'])
+///               children: <Widget>[
+///                 for (final String key in <String>['A', 'B', 'C'])
 ///                   ElevatedButton(
 ///                     child: Text(key),
 ///                     onPressed: () => _handleKeyPress(key),
@@ -1678,8 +1682,8 @@ class TextInput {
 /// }
 ///
 /// class MyTextInputControl extends TextInputControl {
-///   TextEditingValue _editingState = TextEditingValue();
-///   final _visible = ValueNotifier<bool>(false);
+///   TextEditingValue _editingState = const TextEditingValue();
+///   final ValueNotifier<bool> _visible = ValueNotifier<bool>(false);
 ///
 ///   /// The input control's visibility state for updating the visual presentation.
 ///   ValueListenable<bool> get visible => _visible;
@@ -1714,13 +1718,13 @@ class TextInput {
 ///   }
 ///
 ///   String _insertText(String input) {
-///     final text = _editingState.text;
-///     final selection = _editingState.selection;
+///     final String text = _editingState.text;
+///     final TextSelection selection = _editingState.selection;
 ///     return text.replaceRange(selection.start, selection.end, input);
 ///   }
 ///
 ///   TextSelection _replaceSelection(String input) {
-///     final selection = _editingState.selection;
+///     final TextSelection selection = _editingState.selection;
 ///     return TextSelection.collapsed(offset: selection.start + input.length);
 ///   }
 /// }
