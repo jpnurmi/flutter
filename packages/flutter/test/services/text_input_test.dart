@@ -464,6 +464,10 @@ void main() {
       expectedMethodCalls.add('setComposingRect');
       expect(control.methodCalls, expectedMethodCalls);
 
+      connection.setCaretRect(Rect.zero);
+      expectedMethodCalls.add('setCaretRect');
+      expect(control.methodCalls, expectedMethodCalls);
+
       connection.setEditableSizeAndTransform(Size.zero, Matrix4.identity());
       expectedMethodCalls.add('setEditableSizeAndTransform');
       expect(control.methodCalls, expectedMethodCalls);
@@ -655,6 +659,11 @@ class FakeTextInputControl extends TextInputControl {
   @override
   void setComposingRect(Rect rect) {
     methodCalls.add('setComposingRect');
+  }
+
+  @override
+  void setCaretRect(Rect rect) {
+    methodCalls.add('setCaretRect');
   }
 
   @override
