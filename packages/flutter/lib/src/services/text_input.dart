@@ -804,7 +804,7 @@ mixin TextSelectionDelegate {
   /// formatting.
   @Deprecated(
     'Use the userUpdateTextEditingValue instead. '
-    'This feature was deprecated after v1.26.0-17.2.pre.'
+    'This feature was deprecated after v1.26.0-17.2.pre.',
   )
   set textEditingValue(TextEditingValue value) {}
 
@@ -938,6 +938,7 @@ class TextInputConnection {
   Size? _cachedSize;
   Matrix4? _cachedTransform;
   Rect? _cachedRect;
+  Rect? _cachedCaretRect;
 
   static int _nextId = 1;
   final int _id;
@@ -1025,6 +1026,17 @@ class TextInputConnection {
     _cachedRect = rect;
     final Rect validRect = rect.isFinite ? rect : Offset.zero & const Size(-1, -1);
     TextInput._instance._setComposingTextRect(validRect);
+  }
+
+  /// Sends the coordinates of caret rect. This is used on macOS for positioning
+  /// the accent selection menu.
+  void setCaretRect(Rect rect) {
+    assert(rect != null);
+    if (rect == _cachedCaretRect)
+      return;
+    _cachedCaretRect = rect;
+    final Rect validRect = rect.isFinite ? rect : Offset.zero & const Size(-1, -1);
+    TextInput._instance._setCaretRect(validRect);
   }
 
   /// Send text styling information.
@@ -1383,7 +1395,8 @@ class TextInput {
         break;
       case 'TextInputClient.performPrivateCommand':
         _currentConnection!._client.performPrivateCommand(
-          args[1]['action'] as String, args[1]['data'] as Map<String, dynamic>);
+          args[1]['action'] as String, args[1]['data'] as Map<String, dynamic>,
+        );
         break;
       case 'TextInputClient.updateFloatingCursor':
         _currentConnection!._client.updateFloatingCursor(_toTextPoint(
@@ -1460,6 +1473,11 @@ class TextInput {
   void _setComposingTextRect(Rect rect) {
     for (final TextInputControl control in _inputControls)
       control.setComposingRect(rect);
+  }
+
+  void _setCaretRect(Rect rect) {
+    for (final TextInputControl control in _inputControls)
+      control.setCaretRect(rect);
   }
 
   void _setStyle({
@@ -1785,6 +1803,12 @@ abstract class TextInputControl {
   /// changes.
   void setComposingRect(Rect rect) {}
 
+  /// Informs the text input control about caret area changes.
+  ///
+  /// This method is called when the attached input client's caret area
+  /// changes.
+  void setCaretRect(Rect rect) {}
+
   /// Informs the text input control about text style changes.
   ///
   /// This method is called on the when the attached input client's text style
@@ -1883,6 +1907,19 @@ class _PlatformTextInputControl extends TextInputControl {
   void setComposingRect(Rect rect) {
     _channel.invokeMethod<void>(
       'TextInput.setMarkedTextRect',
+      <String, dynamic>{
+        'width': rect.width,
+        'height': rect.height,
+        'x': rect.left,
+        'y': rect.top,
+      },
+    );
+  }
+
+  @override
+  void setCaretRect(Rect rect) {
+    _channel.invokeMethod<void>(
+      'TextInput.setCaretRect',
       <String, dynamic>{
         'width': rect.width,
         'height': rect.height,
