@@ -2505,6 +2505,7 @@ class BuildOwner {
   /// [debugPrintBuildScope] to true. This is useful when debugging problems
   /// involving widgets not getting marked dirty, or getting marked dirty too
   /// often.
+  @pragma('vm:notify-debugger-on-exception')
   void buildScope(Element context, [ VoidCallback? callback ]) {
     if (callback == null && _dirtyElements.isEmpty)
       return;
@@ -2833,6 +2834,7 @@ class BuildOwner {
   ///
   /// After the current call stack unwinds, a microtask that notifies listeners
   /// about changes to global keys will run.
+  @pragma('vm:notify-debugger-on-exception')
   void finalizeTree() {
     Timeline.startSync('Finalize tree', arguments: timelineArgumentsIndicatingLandmarkEvent);
     try {
@@ -3085,8 +3087,21 @@ abstract class Element extends DiagnosticableTree implements BuildContext {
 
   /// The configuration for this element.
   @override
-  Widget get widget => _widget;
-  Widget _widget;
+  Widget get widget => _widget!;
+  Widget? _widget;
+
+  /// Returns true if the Element is defunct.
+  ///
+  /// This getter always returns false in profile and release builds.
+  /// See the lifecycle documentation for [Element] for additional information.
+  bool get debugIsDefunct {
+    bool isDefunct = false;
+    assert(() {
+      isDefunct = _lifecycleState == _ElementLifecycle.defunct;
+      return true;
+    }());
+    return isDefunct;
+  }
 
   /// The object that manages the lifecycle of this element.
   @override
@@ -3801,10 +3816,14 @@ abstract class Element extends DiagnosticableTree implements BuildContext {
     assert(depth != null);
     assert(owner != null);
     // Use the private property to avoid a CastError during hot reload.
-    final Key? key = _widget.key;
+    final Key? key = _widget!.key;
     if (key is GlobalKey) {
       owner!._unregisterGlobalKey(key, this);
     }
+    // Release resources to reduce the severity of memory leaks caused by
+    // defunct, but accidentally retained Elements.
+    _widget = null;
+    _dependencies = null;
     _lifecycleState = _ElementLifecycle.defunct;
   }
 
@@ -4116,7 +4135,7 @@ abstract class Element extends DiagnosticableTree implements BuildContext {
 
   /// A short, textual description of this element.
   @override
-  String toStringShort() => widget.toStringShort();
+  String toStringShort() => _widget?.toStringShort() ?? '${describeIdentity(this)}(DEFUNCT)';
 
   @override
   DiagnosticsNode toDiagnosticsNode({ String? name, DiagnosticsTreeStyle? style }) {
@@ -4134,9 +4153,9 @@ abstract class Element extends DiagnosticableTree implements BuildContext {
     if (_lifecycleState != _ElementLifecycle.initial) {
       properties.add(ObjectFlagProperty<int>('depth', depth, ifNull: 'no depth'));
     }
-    properties.add(ObjectFlagProperty<Widget>('widget', widget, ifNull: 'no widget'));
-    properties.add(DiagnosticsProperty<Key>('key', widget.key, showName: false, defaultValue: null, level: DiagnosticLevel.hidden));
-    widget.debugFillProperties(properties);
+    properties.add(ObjectFlagProperty<Widget>('widget', _widget, ifNull: 'no widget'));
+    properties.add(DiagnosticsProperty<Key>('key', _widget?.key, showName: false, defaultValue: null, level: DiagnosticLevel.hidden));
+    _widget?.debugFillProperties(properties);
     properties.add(FlagProperty('dirty', value: dirty, ifTrue: 'dirty'));
     if (_dependencies != null && _dependencies!.isNotEmpty) {
       final List<DiagnosticsNode> diagnosticsDependencies = _dependencies!
@@ -4296,7 +4315,9 @@ class _ElementDiagnosticableTreeNode extends DiagnosticableTreeNode {
   Map<String, Object?> toJsonMap(DiagnosticsSerializationDelegate delegate) {
     final Map<String, Object?> json = super.toJsonMap(delegate);
     final Element element = value as Element;
-    json['widgetRuntimeType'] = element.widget.runtimeType.toString();
+    if (!element.debugIsDefunct) {
+      json['widgetRuntimeType'] = element.widget.runtimeType.toString();
+    }
     json['stateful'] = stateful;
     return json;
   }
@@ -4560,6 +4581,7 @@ abstract class ComponentElement extends Element {
   /// Called automatically during [mount] to generate the first build, and by
   /// [rebuild] when the element needs updating.
   @override
+  @pragma('vm:notify-debugger-on-exception')
   void performRebuild() {
     if (!kReleaseMode && debugProfileBuildsEnabled)
       Timeline.startSync('${widget.runtimeType}',  arguments: timelineArgumentsIndicatingLandmarkEvent);
@@ -4660,7 +4682,7 @@ class StatelessElement extends ComponentElement {
 class StatefulElement extends ComponentElement {
   /// Creates an element that uses the given widget as its configuration.
   StatefulElement(StatefulWidget widget)
-      : state = widget.createState(),
+      : _state = widget.createState(),
         super(widget) {
     assert(() {
       if (!state._debugTypesAreRight(widget)) {
@@ -4695,7 +4717,8 @@ class StatefulElement extends ComponentElement {
   /// There is a one-to-one relationship between [State] objects and the
   /// [StatefulElement] objects that hold them. The [State] objects are created
   /// by [StatefulElement] in [mount].
-  final State<StatefulWidget> state;
+  State<StatefulWidget> get state => _state!;
+  State<StatefulWidget>? _state;
 
   @override
   void reassemble() {
@@ -4810,6 +4833,9 @@ class StatefulElement extends ComponentElement {
       ]);
     }());
     state._element = null;
+    // Release resources to reduce the severity of memory leaks caused by
+    // defunct, but accidentally retained Elements.
+    _state = null;
   }
 
   @override
@@ -4895,7 +4921,7 @@ class StatefulElement extends ComponentElement {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<State<StatefulWidget>>('state', state, defaultValue: null));
+    properties.add(DiagnosticsProperty<State<StatefulWidget>>('state', _state, defaultValue: null));
   }
 }
 
@@ -5705,13 +5731,14 @@ abstract class RenderObjectElement extends Element {
 
   @override
   void unmount() {
+    final RenderObjectWidget oldWidget = widget;
     super.unmount();
     assert(
       !renderObject.attached,
       'A RenderObject was still attached when attempting to unmount its '
       'RenderObjectElement: $renderObject',
     );
-    widget.didUnmountRenderObject(renderObject);
+    oldWidget.didUnmountRenderObject(renderObject);
   }
 
   void _updateParentData(ParentDataWidget<ParentData> parentDataWidget) {

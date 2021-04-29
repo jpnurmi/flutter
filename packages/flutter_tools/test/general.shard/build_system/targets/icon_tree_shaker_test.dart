@@ -21,7 +21,7 @@ import 'package:meta/meta.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../src/common.dart';
-import '../../../src/context.dart';
+import '../../../src/fake_process_manager.dart';
 import '../../../src/fakes.dart';
 
 final Platform kNoAnsiPlatform = FakePlatform(stdoutSupportsAnsi: false);
@@ -96,7 +96,7 @@ void main() {
       outputPreferences: OutputPreferences.test(showColor: false),
     );
 
-    dartPath = artifacts.getArtifactPath(Artifact.engineDartBinary);
+    dartPath = artifacts.getHostArtifact(HostArtifact.engineDartBinary).path;
     constFinderPath = artifacts.getArtifactPath(Artifact.constFinder);
     fontSubsetPath = artifacts.getArtifactPath(Artifact.fontSubset);
 
