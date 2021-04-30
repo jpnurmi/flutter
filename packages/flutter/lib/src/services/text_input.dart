@@ -1507,11 +1507,19 @@ class TextInput {
     if (_currentConnection == null)
       return;
 
-    for (final TextInputControl control in _inputControls) {
+    for (final TextInputControl control in _instance._inputControls) {
       if (control != exclude)
         control.setEditingState(value);
     }
-    _currentConnection!._client.updateEditingValue(value);
+    _instance._currentConnection!._client.updateEditingValue(value);
+  }
+
+  /// Updates the editing value of the attached input client.
+  ///
+  /// This method should be called by the text input control implementation to
+  /// send editing value updates to the attached input client.
+  static void updateEditingValue(TextEditingValue value) {
+    _instance._updateEditingValue(value, exclude: _instance._currentControl);
   }
 
   /// Finishes the current autofill context, and potentially saves the user
@@ -1569,10 +1577,12 @@ class TextInput {
   }
 }
 
-/// An interface for implementing text input controls.
+/// An interface for implementing text input controls that receive text editing
+/// state changes and visual input control requests.
 ///
-/// Text input controls receive text input state changes and visual input control
-/// requests, such as showing and hiding the input control, from the framework.
+/// Editing state changes and input control requests are sent by the framework
+/// when the editing state of the attached text input client changes, or it
+/// requests the input control to be shown or hidden, for example.
 ///
 /// The input control can be installed with [TextInput.setInputControl], and the
 /// default platform text input control can be restored with
@@ -1832,15 +1842,6 @@ abstract class TextInputControl {
   ///
   ///  * [TextInput.finishAutofillContext]
   void finishAutofillContext({bool shouldSave = true}) {}
-
-  /// Updates the editing value of the attached input client.
-  ///
-  /// This method should be called by the text input control implementation to
-  /// send editing value updates to the attached input client.
-  @nonVirtual
-  void updateEditingValue(TextEditingValue value) {
-    TextInput._instance._updateEditingValue(value, exclude: this);
-  }
 }
 
 /// Provides access to the platform text input control.
