@@ -1742,7 +1742,7 @@ class TextInput {
 ///     );
 ///
 ///     // Request the attached client to update accordingly.
-///     updateEditingValue(_editingState);
+///     TextInput.updateEditingValue(_editingState);
 ///   }
 ///
 ///   String _insertText(String input) {
@@ -1764,7 +1764,7 @@ class TextInput {
 ///  * [TextInput.setInputControl], a method to install a custom text input control.
 ///  * [TextInput.restorePlatformInputControl], a method to restore the default
 ///    platform text input control.
-///  * [TextInputControl.updateEditingValue], a method to send user input to
+///  * [TextInput.updateEditingValue], a method to send user input to
 ///    the framework.
 abstract class TextInputControl {
   /// Requests the text input control to attach to the given input client.
