@@ -237,7 +237,7 @@ class FlexibleSpaceBar extends StatefulWidget {
   }
 
   @override
-  _FlexibleSpaceBarState createState() => _FlexibleSpaceBarState();
+  State<FlexibleSpaceBar> createState() => _FlexibleSpaceBarState();
 }
 
 class _FlexibleSpaceBarState extends State<FlexibleSpaceBar> {
@@ -337,12 +337,12 @@ class _FlexibleSpaceBarState extends State<FlexibleSpaceBar> {
             final double blurAmount = (constraints.maxHeight - settings.maxExtent) / 10;
             children.add(Positioned.fill(
               child: BackdropFilter(
-                child: Container(
-                  color: Colors.transparent,
-                ),
                 filter: ui.ImageFilter.blur(
                   sigmaX: blurAmount,
                   sigmaY: blurAmount,
+                ),
+                child: Container(
+                  color: Colors.transparent,
                 ),
               ),
             ));

@@ -18,7 +18,6 @@ import '../base/user_messages.dart';
 import '../base/utils.dart';
 import '../build_info.dart';
 import '../build_system/build_system.dart';
-import '../build_system/targets/common.dart' show kExtraFrontEndOptions, kExtraGenSnapshotOptions; // for deprecated option name aliases only
 import '../bundle.dart' as bundle;
 import '../cache.dart';
 import '../dart/generate_synthetic_packages.dart';
@@ -1467,7 +1466,9 @@ DevelopmentArtifact artifactFromTargetPlatform(TargetPlatform targetPlatform) {
     case TargetPlatform.fuchsia_x64:
     case TargetPlatform.tester:
     case TargetPlatform.windows_uwp_x64:
-      // No artifacts currently supported.
+      if (featureFlags.isWindowsUwpEnabled) {
+        return DevelopmentArtifact.windowsUwp;
+      }
       return null;
   }
   return null;
