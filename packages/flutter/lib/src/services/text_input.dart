@@ -174,14 +174,17 @@ class TextInputType {
   /// [TYPE_TEXT_VARIATION_POSTAL_ADDRESS](https://developer.android.com/reference/android/text/InputType#TYPE_TEXT_VARIATION_POSTAL_ADDRESS).
   static const TextInputType streetAddress = TextInputType._(9);
 
+  /// No keyboard.
+  static const TextInputType none = TextInputType._(10);
+
   /// All possible enum values.
   static const List<TextInputType> values = <TextInputType>[
-    text, multiline, number, phone, datetime, emailAddress, url, visiblePassword, name, streetAddress,
+    text, multiline, number, phone, datetime, emailAddress, url, visiblePassword, name, streetAddress, none,
   ];
 
   // Corresponding string name for each of the [values].
   static const List<String> _names = <String>[
-    'text', 'multiline', 'number', 'phone', 'datetime', 'emailAddress', 'url', 'visiblePassword', 'name', 'address',
+    'text', 'multiline', 'number', 'phone', 'datetime', 'emailAddress', 'url', 'visiblePassword', 'name', 'address', 'none',
   ];
 
   // Enum value name, this is what enum.toString() would normally return.
@@ -1473,11 +1476,13 @@ class TextInput {
   }
 
   void _show() {
-    _currentControl?.show();
+    for (final TextInputControl control in _inputControls)
+      control.show();
   }
 
   void _hide() {
-    _currentControl?.hide();
+    for (final TextInputControl control in _inputControls)
+      control.hide();
   }
 
   void _setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {
@@ -1868,11 +1873,21 @@ class _PlatformTextInputControl extends TextInputControl {
 
   MethodChannel get _channel => TextInput._instance._channel;
 
+  Map<String, dynamic> _configurationToJson(TextInputConfiguration configuration) {
+    final Map<String, dynamic> json = configuration.toJson();
+    if (TextInput._instance._currentControl != _PlatformTextInputControl.instance)
+      json['inputType'] = TextInputType.none.toJson();
+    return json;
+  }
+
   @override
   void attach(TextInputClient client, TextInputConfiguration configuration) {
     _channel.invokeMethod<void>(
       'TextInput.setClient',
-      <dynamic>[ TextInput._instance._currentConnection!._id, configuration.toJson() ],
+      <dynamic>[
+        TextInput._instance._currentConnection!._id,
+        _configurationToJson(configuration),
+      ],
     );
   }
 
@@ -1885,7 +1900,7 @@ class _PlatformTextInputControl extends TextInputControl {
   void updateConfig(TextInputConfiguration configuration) {
     _channel.invokeMethod<void>(
       'TextInput.updateConfig',
-      configuration.toJson(),
+      _configurationToJson(configuration),
     );
   }
 
