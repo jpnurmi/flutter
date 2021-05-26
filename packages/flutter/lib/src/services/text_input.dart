@@ -1366,9 +1366,11 @@ class TextInput {
 
     final List<dynamic> args = methodCall.arguments as List<dynamic>;
 
+    // The updateEditingStateWithTag request (autofill) can come up even to a
+    // text field that doesn't have a connection.
     if (method == 'TextInputClient.updateEditingStateWithTag') {
+      assert(_currentConnection!._client != null);
       final TextInputClient client = _currentConnection!._client;
-      assert(client != null);
       final AutofillScope? scope = client.currentAutofillScope;
       final Map<String, dynamic> editingValue = args[1] as Map<String, dynamic>;
       for (final String tag in editingValue.keys) {
@@ -1382,9 +1384,22 @@ class TextInput {
     }
 
     final int client = args[0] as int;
-    // The incoming message was for a different client.
-    if (client != _currentConnection!._id)
-      return;
+    if (client != _currentConnection!._id) {
+      // If the client IDs don't match, the incoming message was for a different
+      // client.
+      bool debugAllowAnyway = false;
+      assert(() {
+        // In debug builds we allow "-1" as a magical client ID that ignores
+        // this verification step so that tests can always get through, even
+        // when they are not mocking the engine side of text input.
+        if (client == -1)
+          debugAllowAnyway = true;
+        return true;
+      }());
+      if (!debugAllowAnyway)
+        return;
+    }
+
     switch (method) {
       case 'TextInputClient.updateEditingState':
         final TextEditingValue value = TextEditingValue.fromJSON(args[1] as Map<String, dynamic>);
@@ -1959,7 +1974,7 @@ class _PlatformTextInputControl extends TextInputControl {
   void finishAutofillContext({bool shouldSave = true}) {
     _channel.invokeMethod<void>(
       'TextInput.finishAutofillContext',
-      shouldSave ,
+      shouldSave,
     );
   }
 }
