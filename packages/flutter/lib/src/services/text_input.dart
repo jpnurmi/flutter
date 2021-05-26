@@ -1725,7 +1725,7 @@ class TextInput {
 /// }
 ///
 /// class MyTextInputControl extends TextInputControl {
-///   TextEditingValue _editingState = const TextEditingValue();
+///   TextEditingValue _editingState = TextEditingValue.empty;
 ///   final ValueNotifier<bool> _visible = ValueNotifier<bool>(false);
 ///
 ///   /// The input control's visibility state for updating the visual presentation.
