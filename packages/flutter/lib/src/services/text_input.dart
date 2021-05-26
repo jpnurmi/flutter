@@ -1604,8 +1604,8 @@ class TextInput {
 /// [TextInput.restorePlatformInputControl].
 ///
 /// The [TextInputControl] class must be extended. [TextInputControl]
-/// implementations should call [TextInputControl.updateEditingValue] to send
-/// user input to the attached input client.
+/// implementations should call [TextInput.updateEditingValue] to send user
+/// input to the attached input client.
 ///
 /// {@tool dartpad --template=freeform}
 /// This example illustrates a basic [TextInputControl] implementation:
