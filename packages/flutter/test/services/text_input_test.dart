@@ -458,31 +458,62 @@ void main() {
       expect(fakeTextChannel.outgoingCalls, isEmpty);
     });
 
-    test('receives visual input control requests', () async {
+    test('both input controls receive requests', () async {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 
+      const TextInputConfiguration textConfig = TextInputConfiguration(inputType: TextInputType.text);
+      const TextInputConfiguration numberConfig = TextInputConfiguration(inputType: TextInputType.number);
+      const TextInputConfiguration noneConfig = TextInputConfiguration(inputType: TextInputType.none);
+
       final FakeTextInputClient client = FakeTextInputClient(TextEditingValue.empty);
-      final TextInputConnection connection = TextInput.attach(client, const TextInputConfiguration());
+      final TextInputConnection connection = TextInput.attach(client, textConfig);
 
       final List<String> expectedMethodCalls = <String>['attach'];
       expect(control.methodCalls, expectedMethodCalls);
+      expect(control.inputType, TextInputType.text);
+      fakeTextChannel.validateOutgoingMethodCalls(<MethodCall>[
+        // When there's a custom text input control installed, the platform text
+        // input control receives TextInputType.none
+        MethodCall('TextInput.setClient', <dynamic>[1, noneConfig.toJson()]),
+      ]);
 
       connection.show();
       expectedMethodCalls.add('show');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 2);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.show');
+
+      connection.updateConfig(numberConfig);
+      expectedMethodCalls.add('updateConfig');
+      expect(control.methodCalls, expectedMethodCalls);
+      expect(control.inputType, TextInputType.number);
+      expect(fakeTextChannel.outgoingCalls.length, 3);
+      fakeTextChannel.validateOutgoingMethodCalls(<MethodCall>[
+        // When there's a custom text input control installed, the platform text
+        // input control receives TextInputType.none
+        MethodCall('TextInput.setClient', <dynamic>[1, noneConfig.toJson()]),
+        const MethodCall('TextInput.show'),
+        MethodCall('TextInput.updateConfig', noneConfig.toJson()),
+      ]);
 
       connection.setComposingRect(Rect.zero);
       expectedMethodCalls.add('setComposingRect');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 4);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setMarkedTextRect');
 
       connection.setCaretRect(Rect.zero);
       expectedMethodCalls.add('setCaretRect');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 5);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setCaretRect');
 
       connection.setEditableSizeAndTransform(Size.zero, Matrix4.identity());
       expectedMethodCalls.add('setEditableSizeAndTransform');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 6);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setEditableSizeAndTransform');
 
       connection.setStyle(
         fontFamily: null,
@@ -493,15 +524,21 @@ void main() {
       );
       expectedMethodCalls.add('setStyle');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 7);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setStyle');
 
       connection.close();
       expectedMethodCalls.add('detach');
       expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 8);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.clearClient');
 
       expectedMethodCalls.add('hide');
       final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized() as TestWidgetsFlutterBinding;
       await binding.runAsync(() async {});
       await expectLater(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 9);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.hide');
     });
 
     test('notifies changes to the attached client', () async {
@@ -628,10 +665,12 @@ class FakeTextChannel implements MethodChannel {
 
 class FakeTextInputControl extends TextInputControl {
   final List<String> methodCalls = <String>[];
+  late TextInputType inputType;
 
   @override
   void attach(TextInputClient client, TextInputConfiguration configuration) {
     methodCalls.add('attach');
+    inputType = configuration.inputType;
   }
 
   @override
@@ -647,6 +686,7 @@ class FakeTextInputControl extends TextInputControl {
   @override
   void updateConfig(TextInputConfiguration configuration) {
     methodCalls.add('updateConfig');
+    inputType = configuration.inputType;
   }
 
   @override
