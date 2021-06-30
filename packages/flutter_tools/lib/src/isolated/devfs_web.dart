@@ -29,7 +29,7 @@ import '../base/net.dart';
 import '../base/platform.dart';
 import '../build_info.dart';
 import '../build_system/targets/web.dart';
-import '../bundle.dart';
+import '../bundle_builder.dart';
 import '../cache.dart';
 import '../compile.dart';
 import '../convert.dart';
@@ -660,6 +660,10 @@ class WebDevFS implements DevFS {
 
   Dwds get dwds => webAssetServer.dwds;
 
+  // A flag to indicate whether we have called `setAssetDirectory` on the target device.
+  @override
+  bool hasSetAssetDirectory = false;
+
   Future<DebugConnection> _cachedExtensionFuture;
   StreamSubscription<void> _connectedApps;
 
@@ -841,7 +845,7 @@ class WebDevFS implements DevFS {
     final CompilerOutput compilerOutput = await generator.recompile(
       Uri(
         scheme: 'org-dartlang-app',
-        path: '/' + mainUri.pathSegments.last,
+        path: '/${mainUri.pathSegments.last}',
       ),
       invalidatedFiles,
       outputPath: dillOutputPath,

@@ -174,7 +174,7 @@ class TextInputType {
   /// [TYPE_TEXT_VARIATION_POSTAL_ADDRESS](https://developer.android.com/reference/android/text/InputType#TYPE_TEXT_VARIATION_POSTAL_ADDRESS).
   static const TextInputType streetAddress = TextInputType._(9);
 
-  /// No keyboard.
+  /// Prevent the OS from showing the on-screen virtual keyboard.
   static const TextInputType none = TextInputType._(10);
 
   /// All possible enum values.
@@ -227,7 +227,7 @@ class TextInputType {
 ///
 /// Despite the logical meaning of each action, choosing a particular
 /// [TextInputAction] does not necessarily cause any specific behavior to
-/// happen, other than changing the focus when approapriate. It is up to the
+/// happen, other than changing the focus when appropriate. It is up to the
 /// developer to ensure that the behavior that occurs when an action button is
 /// pressed is appropriate for the action button chosen.
 ///
@@ -890,10 +890,10 @@ abstract class TextInputClient {
   /// between certain input methods and their clients.
   ///
   /// See also:
-  ///   * [https://developer.android.com/reference/android/view/inputmethod/InputConnection#performPrivateCommand(java.lang.String,%20android.os.Bundle)],
+  ///   * [performPrivateCommand](https://developer.android.com/reference/android/view/inputmethod/InputConnection#performPrivateCommand\(java.lang.String,%20android.os.Bundle\)),
   ///     which is the Android documentation for performPrivateCommand, used to
   ///     send a command from the input method.
-  ///   * [https://developer.android.com/reference/android/view/inputmethod/InputMethodManager#sendAppPrivateCommand],
+  ///   * [sendAppPrivateCommand](https://developer.android.com/reference/android/view/inputmethod/InputMethodManager#sendAppPrivateCommand),
   ///     which is the Android documentation for sendAppPrivateCommand, used to
   ///     send a command to the input method.
   void performPrivateCommand(String action, Map<String, dynamic> data);
@@ -1412,8 +1412,10 @@ class TextInput {
         _currentConnection!._client.performAction(_toTextInputAction(args[1] as String));
         break;
       case 'TextInputClient.performPrivateCommand':
+        final Map<String, dynamic> firstArg = args[1] as Map<String, dynamic>;
         _currentConnection!._client.performPrivateCommand(
-          args[1]['action'] as String, args[1]['data'] as Map<String, dynamic>,
+          firstArg['action'] as String,
+          firstArg['data'] as Map<String, dynamic>,
         );
         break;
       case 'TextInputClient.updateFloatingCursor':
