@@ -1623,6 +1623,27 @@ void main() {
     );
 
     expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
+
+    // Test ListTileTheme cursor
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: MouseRegion(
+              cursor: SystemMouseCursors.forbidden,
+              child: ListTileTheme(
+                mouseCursor: MaterialStateProperty.all(SystemMouseCursors.basic),
+                child: ListTile(
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(RendererBinding.instance!.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
   });
 
   testWidgets('ListTile respects tileColor & selectedTileColor', (WidgetTester tester) async {

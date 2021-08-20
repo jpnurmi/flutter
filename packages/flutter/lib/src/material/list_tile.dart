@@ -56,6 +56,7 @@ class ListTileTheme extends InheritedTheme {
     this.horizontalTitleGap,
     this.minVerticalPadding,
     this.minLeadingWidth,
+    this.mouseCursor,
     required Widget child,
   }) : super(key: key, child: child);
 
@@ -78,6 +79,7 @@ class ListTileTheme extends InheritedTheme {
     double? horizontalTitleGap,
     double? minVerticalPadding,
     double? minLeadingWidth,
+    MaterialStateProperty<MouseCursor?>? mouseCursor,
     required Widget child,
   }) {
     assert(child != null);
@@ -99,6 +101,7 @@ class ListTileTheme extends InheritedTheme {
           horizontalTitleGap: horizontalTitleGap ?? parent.horizontalTitleGap,
           minVerticalPadding: minVerticalPadding ?? parent.minVerticalPadding,
           minLeadingWidth: minLeadingWidth ?? parent.minLeadingWidth,
+          mouseCursor: mouseCursor ?? parent.mouseCursor,
           child: child,
         );
       },
@@ -163,6 +166,11 @@ class ListTileTheme extends InheritedTheme {
   /// If [ListTile.enableFeedback] is provided, [enableFeedback] is ignored.
   final bool? enableFeedback;
 
+  /// {@macro flutter.material.ListTileTheme.mouseCursor}
+  ///
+  /// If specified, overrides the default value of [ListTile.mouseCursor].
+  final MaterialStateProperty<MouseCursor?>? mouseCursor;
+
   /// The closest instance of this class that encloses the given context.
   ///
   /// Typical usage is as follows:
@@ -191,6 +199,7 @@ class ListTileTheme extends InheritedTheme {
       horizontalTitleGap: horizontalTitleGap,
       minVerticalPadding: minVerticalPadding,
       minLeadingWidth: minLeadingWidth,
+      mouseCursor: mouseCursor,
       child: child,
     );
   }
@@ -209,7 +218,8 @@ class ListTileTheme extends InheritedTheme {
         || enableFeedback != oldWidget.enableFeedback
         || horizontalTitleGap != oldWidget.horizontalTitleGap
         || minVerticalPadding != oldWidget.minVerticalPadding
-        || minLeadingWidth != oldWidget.minLeadingWidth;
+        || minLeadingWidth != oldWidget.minLeadingWidth
+        || mouseCursor != oldWidget.mouseCursor;
   }
 }
 
@@ -890,6 +900,7 @@ class ListTile extends StatelessWidget {
   /// Inoperative if [enabled] is false.
   final GestureLongPressCallback? onLongPress;
 
+  /// {@template flutter.material.ListTileTheme.mouseCursor}
   /// The cursor for a mouse pointer when it enters or is hovering over the
   /// widget.
   ///
@@ -898,8 +909,10 @@ class ListTile extends StatelessWidget {
   ///
   ///  * [MaterialState.selected].
   ///  * [MaterialState.disabled].
+  /// {@endtemplate}
   ///
-  /// If this property is null, [MaterialStateMouseCursor.clickable] will be used.
+  /// If null, then the value of [ListTileTheme.mouseCursor] is used. If that
+  /// is also null, then [MaterialStateMouseCursor.clickable] is used.
   final MouseCursor? mouseCursor;
 
   /// If this tile is also [enabled] then icons and text are rendered with the same color.
@@ -1179,13 +1192,13 @@ class ListTile extends StatelessWidget {
       ?? tileTheme.contentPadding?.resolve(textDirection)
       ?? _defaultContentPadding;
 
-    final MouseCursor resolvedMouseCursor = MaterialStateProperty.resolveAs<MouseCursor>(
-      mouseCursor ?? MaterialStateMouseCursor.clickable,
-      <MaterialState>{
-        if (!enabled || (onTap == null && onLongPress == null)) MaterialState.disabled,
-        if (selected) MaterialState.selected,
-      },
-    );
+    final Set<MaterialState> states = <MaterialState>{
+      if (!enabled || (onTap == null && onLongPress == null)) MaterialState.disabled,
+      if (selected) MaterialState.selected,
+    };
+    final MouseCursor resolvedMouseCursor = MaterialStateProperty.resolveAs<MouseCursor?>(mouseCursor, states)
+      ?? tileTheme.mouseCursor?.resolve(states)
+      ?? MaterialStateMouseCursor.clickable.resolve(states);
 
     return InkWell(
       customBorder: shape ?? tileTheme.shape,
