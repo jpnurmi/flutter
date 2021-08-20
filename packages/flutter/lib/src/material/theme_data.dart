@@ -44,6 +44,7 @@ import 'list_tile_theme.dart';
 import 'menu_bar_theme.dart';
 import 'menu_button_theme.dart';
 import 'menu_theme.dart';
+import 'mouse_cursor_theme.dart';
 import 'navigation_bar_theme.dart';
 import 'navigation_drawer_theme.dart';
 import 'navigation_rail_theme.dart';
@@ -297,6 +298,7 @@ class ThemeData with Diagnosticable {
     Iterable<ThemeExtension<dynamic>>? extensions,
     InputDecorationTheme? inputDecorationTheme,
     MaterialTapTargetSize? materialTapTargetSize,
+    MouseCursorThemeData? mouseCursorTheme,
     PageTransitionsTheme? pageTransitionsTheme,
     TargetPlatform? platform,
     ScrollbarThemeData? scrollbarTheme,
@@ -444,6 +446,7 @@ class ThemeData with Diagnosticable {
          materialTapTargetSize ??= MaterialTapTargetSize.shrinkWrap;
         break;
     }
+    mouseCursorTheme ??= const MouseCursorThemeData();
     pageTransitionsTheme ??= const PageTransitionsTheme();
     scrollbarTheme ??= const ScrollbarThemeData();
     visualDensity ??= VisualDensity.adaptivePlatformDensity;
@@ -619,6 +622,7 @@ class ThemeData with Diagnosticable {
       extensions: _themeExtensionIterableToMap(extensions),
       inputDecorationTheme: inputDecorationTheme,
       materialTapTargetSize: materialTapTargetSize,
+      mouseCursorTheme: mouseCursorTheme,
       pageTransitionsTheme: pageTransitionsTheme,
       platform: platform,
       scrollbarTheme: scrollbarTheme,
@@ -727,6 +731,7 @@ class ThemeData with Diagnosticable {
     required this.extensions,
     required this.inputDecorationTheme,
     required this.materialTapTargetSize,
+    required this.mouseCursorTheme,
     required this.pageTransitionsTheme,
     required this.platform,
     required this.scrollbarTheme,
@@ -1056,6 +1061,9 @@ class ThemeData with Diagnosticable {
   /// on mobile platforms, [MaterialTapTargetSize.shrinkWrap] on desktop
   /// platforms.
   final MaterialTapTargetSize materialTapTargetSize;
+
+  /// A theme for customizing the mouse cursors of clickable widgets.
+  final MouseCursorThemeData mouseCursorTheme;
 
   /// Default [MaterialPageRoute] transitions per [TargetPlatform].
   ///
@@ -1626,6 +1634,7 @@ class ThemeData with Diagnosticable {
     Iterable<ThemeExtension<dynamic>>? extensions,
     InputDecorationTheme? inputDecorationTheme,
     MaterialTapTargetSize? materialTapTargetSize,
+    MouseCursorThemeData? mouseCursorTheme,
     PageTransitionsTheme? pageTransitionsTheme,
     TargetPlatform? platform,
     ScrollbarThemeData? scrollbarTheme,
@@ -1764,6 +1773,7 @@ class ThemeData with Diagnosticable {
       extensions: (extensions != null) ? _themeExtensionIterableToMap(extensions) : this.extensions,
       inputDecorationTheme: inputDecorationTheme ?? this.inputDecorationTheme,
       materialTapTargetSize: materialTapTargetSize ?? this.materialTapTargetSize,
+      mouseCursorTheme: mouseCursorTheme ?? this.mouseCursorTheme,
       pageTransitionsTheme: pageTransitionsTheme ?? this.pageTransitionsTheme,
       platform: platform ?? this.platform,
       scrollbarTheme: scrollbarTheme ?? this.scrollbarTheme,
@@ -1958,6 +1968,7 @@ class ThemeData with Diagnosticable {
       extensions: _lerpThemeExtensions(a, b, t),
       inputDecorationTheme:t < 0.5 ? a.inputDecorationTheme : b.inputDecorationTheme,
       materialTapTargetSize:t < 0.5 ? a.materialTapTargetSize : b.materialTapTargetSize,
+      mouseCursorTheme: t < 0.5 ? a.mouseCursorTheme : b.mouseCursorTheme,
       pageTransitionsTheme:t < 0.5 ? a.pageTransitionsTheme : b.pageTransitionsTheme,
       platform: t < 0.5 ? a.platform : b.platform,
       scrollbarTheme: ScrollbarThemeData.lerp(a.scrollbarTheme, b.scrollbarTheme, t),
@@ -2064,6 +2075,7 @@ class ThemeData with Diagnosticable {
         mapEquals(other.extensions, extensions) &&
         other.inputDecorationTheme == inputDecorationTheme &&
         other.materialTapTargetSize == materialTapTargetSize &&
+        other.mouseCursorTheme == mouseCursorTheme &&
         other.pageTransitionsTheme == pageTransitionsTheme &&
         other.platform == platform &&
         other.scrollbarTheme == scrollbarTheme &&
@@ -2167,6 +2179,7 @@ class ThemeData with Diagnosticable {
       ...extensions.values,
       inputDecorationTheme,
       materialTapTargetSize,
+      mouseCursorTheme,
       pageTransitionsTheme,
       platform,
       scrollbarTheme,
@@ -2272,6 +2285,7 @@ class ThemeData with Diagnosticable {
     properties.add(IterableProperty<ThemeExtension<dynamic>>('extensions', extensions.values, defaultValue: defaultData.extensions.values, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<InputDecorationTheme>('inputDecorationTheme', inputDecorationTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<MaterialTapTargetSize>('materialTapTargetSize', materialTapTargetSize, level: DiagnosticLevel.debug));
+    properties.add(DiagnosticsProperty<MouseCursorThemeData>('mouseCursorTheme', mouseCursorTheme, defaultValue: defaultData.mouseCursorTheme, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<PageTransitionsTheme>('pageTransitionsTheme', pageTransitionsTheme, level: DiagnosticLevel.debug));
     properties.add(EnumProperty<TargetPlatform>('platform', platform, defaultValue: defaultTargetPlatform, level: DiagnosticLevel.debug));
     properties.add(DiagnosticsProperty<ScrollbarThemeData>('scrollbarTheme', scrollbarTheme, defaultValue: defaultData.scrollbarTheme, level: DiagnosticLevel.debug));

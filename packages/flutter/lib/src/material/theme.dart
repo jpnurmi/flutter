@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
 import 'material_localizations.dart';
+import 'mouse_cursor_theme.dart';
 import 'theme_data.dart';
 import 'typography.dart';
 
@@ -121,7 +122,10 @@ class Theme extends StatelessWidget {
       child: DefaultSelectionStyle(
         selectionColor: data.textSelectionTheme.selectionColor ?? selectionStyle.selectionColor,
         cursorColor: data.textSelectionTheme.cursorColor ?? selectionStyle.cursorColor,
-        child: child,
+        child: MouseCursorTheme(
+          data: data.mouseCursorTheme,
+          child: child,
+        ),
       ),
     );
   }

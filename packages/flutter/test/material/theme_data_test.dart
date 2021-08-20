@@ -724,6 +724,7 @@ void main() {
       extensions: const <Object, ThemeExtension<dynamic>>{},
       inputDecorationTheme: ThemeData.dark().inputDecorationTheme.copyWith(border: const OutlineInputBorder()),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      mouseCursorTheme: const MouseCursorThemeData(),
       pageTransitionsTheme: pageTransitionTheme,
       platform: TargetPlatform.iOS,
       scrollbarTheme: const ScrollbarThemeData(radius: Radius.circular(10.0)),
@@ -839,6 +840,7 @@ void main() {
       },
       inputDecorationTheme: ThemeData.light().inputDecorationTheme.copyWith(border: InputBorder.none),
       materialTapTargetSize: MaterialTapTargetSize.padded,
+      mouseCursorTheme: const MouseCursorThemeData(),
       pageTransitionsTheme: const PageTransitionsTheme(),
       platform: TargetPlatform.android,
       scrollbarTheme: const ScrollbarThemeData(radius: Radius.circular(10.0)),
@@ -943,6 +945,7 @@ void main() {
       extensions: otherTheme.extensions.values,
       inputDecorationTheme: otherTheme.inputDecorationTheme,
       materialTapTargetSize: otherTheme.materialTapTargetSize,
+      mouseCursorTheme: otherTheme.mouseCursorTheme,
       pageTransitionsTheme: otherTheme.pageTransitionsTheme,
       platform: otherTheme.platform,
       scrollbarTheme: otherTheme.scrollbarTheme,
@@ -1044,6 +1047,7 @@ void main() {
     expect(themeDataCopy.extensions, equals(otherTheme.extensions));
     expect(themeDataCopy.inputDecorationTheme, equals(otherTheme.inputDecorationTheme));
     expect(themeDataCopy.materialTapTargetSize, equals(otherTheme.materialTapTargetSize));
+    expect(themeDataCopy.mouseCursorTheme, equals(otherTheme.mouseCursorTheme));
     expect(themeDataCopy.pageTransitionsTheme, equals(otherTheme.pageTransitionsTheme));
     expect(themeDataCopy.platform, equals(otherTheme.platform));
     expect(themeDataCopy.scrollbarTheme, equals(otherTheme.scrollbarTheme));
@@ -1182,6 +1186,7 @@ void main() {
       'extensions',
       'inputDecorationTheme',
       'materialTapTargetSize',
+      'mouseCursorTheme',
       'pageTransitionsTheme',
       'platform',
       'scrollbarTheme',
