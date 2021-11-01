@@ -457,7 +457,7 @@ class AppResourceBundle {
         // If Locale.tryParse fails, it returns null.
         final Locale? parserResult = Locale.tryParse(fileName.substring(index + 1));
         // If the parserResult is not an actual locale identifier, end the loop.
-        if (_isValidLanguageCode(parserResult?.languageCode)) {
+        if (_isValidLocale(parserResult)) {
           // The parsed result uses dashes ('-'), but we want underscores ('_').
           final String parserLocaleString = parserResult.toString().replaceAll('-', '_');
 
@@ -506,12 +506,28 @@ class AppResourceBundle {
   final Map<String, Object?> resources;
   final Iterable<String> resourceIds;
 
-  static bool _isValidLanguageCode(String? languageCode) {
-    if (languageCode == null) {
+  static bool _isValidLocale(Locale? locale) {
+    if (locale == null) {
       return false;
     }
-    print(languageCode);
-    return (languageCode.length == 2 || languageCode.length == 3) && languageCode.toLowerCase() == languageCode;
+    // language is lowercase, 2-3 letters (ISO 639-2)
+    if ((locale.languageCode.length != 2 && locale.languageCode.length != 3) ||
+        locale.languageCode.toLowerCase() != locale.languageCode) {
+      return false;
+    }
+    // country is optional, uppercase, 2 letters (ISO 3166-1)
+    if (locale.countryCode != null && (locale.countryCode!.length != 2 ||
+        locale.countryCode!.toUpperCase() != locale.countryCode)) {
+      return false;
+    }
+    // script is optional, titlecase, 4 letters (ISO 15924)
+    if (locale.scriptCode != null &&
+       (locale.scriptCode!.length != 4 ||
+        locale.scriptCode![0].toUpperCase() != locale.scriptCode![0] ||
+        locale.scriptCode!.substring(1).toLowerCase() != locale.scriptCode!.substring(1))) {
+      return false;
+    }
+    return true;
   }
 
   String? translationFor(Message message) => resources[message.resourceId] as String?;
