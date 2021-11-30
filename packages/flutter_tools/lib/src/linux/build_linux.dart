@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:io';
+
 import '../artifacts.dart';
 import '../base/analyze_size.dart';
 import '../base/common.dart';
@@ -145,7 +147,8 @@ Future<void> _runCmake(String buildModeName, Directory sourceDir, Directory buil
       workingDirectory: buildDir.path,
       environment: <String, String>{
         'CC': 'clang',
-        'CXX': 'clang++'
+        'CXX': 'clang++',
+        ..._getEnvironment('FLUTTER_CMAKE_ENVIRONMENT'),
       },
       trace: true,
     );
@@ -175,6 +178,7 @@ Future<void> _runBuild(Directory buildDir) async {
           'VERBOSE_SCRIPT_LOGGING': 'true',
         if (!globals.logger.isVerbose)
           'PREFIXED_ERROR_LOGGING': 'true',
+        ..._getEnvironment('FLUTTER_NINJA_ENVIRONMENT'),
       },
       trace: true,
       stdoutErrorMatcher: errorMatcher,
@@ -186,4 +190,12 @@ Future<void> _runBuild(Directory buildDir) async {
     throwToolExit('Build process failed');
   }
   globals.flutterUsage.sendTiming('build', 'linux-ninja', Duration(milliseconds: sw.elapsedMilliseconds));
+}
+
+Map<String, String> _getEnvironment(String key) {
+  final List<String>? environment = Platform.environment[key]?.split(';');
+  return <String, String>{
+    for (final String v in environment ?? const <String>[])
+      v.split('=')[0]: v.split('=')[1],
+  };
 }
