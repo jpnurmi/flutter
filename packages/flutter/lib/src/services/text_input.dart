@@ -2333,7 +2333,10 @@ abstract class TextInputControl {
   /// changes.
   void setCaretRect(Rect rect) {}
 
-  /// TODO
+  /// Informs the text input control about selection area changes.
+  ///
+  /// This method is called when the attached input client's selection area
+  /// changes.
   void setSelectionRects(List<SelectionRect> selectionRects) {}
 
   /// Informs the text input control about text style changes.
