@@ -4,12 +4,10 @@
 
 
 import 'dart:convert' show jsonDecode;
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vector_math/vector_math_64.dart';
 
 import 'text_input_utils.dart';
 
@@ -773,7 +771,7 @@ void main() {
       final FakeTextInputControl control = FakeTextInputControl();
       TextInput.setInputControl(control);
 
-      const TextInputConfiguration textConfig = TextInputConfiguration(inputType: TextInputType.text);
+      const TextInputConfiguration textConfig = TextInputConfiguration();
       const TextInputConfiguration numberConfig = TextInputConfiguration(inputType: TextInputType.number);
       const TextInputConfiguration noneConfig = TextInputConfiguration(inputType: TextInputType.none);
 
@@ -845,7 +843,7 @@ void main() {
       expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.clearClient');
 
       expectedMethodCalls.add('hide');
-      final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized() as TestWidgetsFlutterBinding;
+      final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized();
       await binding.runAsync(() async {});
       await expectLater(control.methodCalls, expectedMethodCalls);
       expect(fakeTextChannel.outgoingCalls.length, 9);
@@ -920,15 +918,6 @@ class FakeTextInputClient with TextInputClient {
   void didChangeInputControl(TextInputControl? oldControl, TextInputControl? newControl) {
     latestMethodCall = 'didChangeInputControl';
   }
-}
-
-class FakeTextChannel implements MethodChannel {
-  FakeTextChannel(this.outgoing) : assert(outgoing != null);
-
-  Future<dynamic> Function(MethodCall) outgoing;
-  Future<void> Function(MethodCall)? incoming;
-
-  List<MethodCall> outgoingCalls = <MethodCall>[];
 
   @override
   void insertTextPlaceholder(Size size) {

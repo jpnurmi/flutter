@@ -2389,7 +2389,7 @@ class _PlatformTextInputControl extends TextInputControl {
       'TextInput.setClient',
       <Object>[
         TextInput._instance._currentConnection!._id,
-        configuration.toJson(),
+        _configurationToJson(configuration),
       ],
     );
   }
