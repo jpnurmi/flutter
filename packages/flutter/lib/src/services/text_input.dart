@@ -2056,6 +2056,20 @@ class TextInput {
     for (final TextInputControl control in TextInput._instance._inputControls)
       control.finishAutofillContext(shouldSave: shouldSave);
   }
+
+  /// Registers a [ScribbleClient] with [elementIdentifier] that can be focused
+  /// by the engine.
+  ///
+  /// For example, the registered [ScribbleClient] list is used to respond to
+  /// UIIndirectScribbleInteraction on an iPad.
+  static void registerScribbleElement(String elementIdentifier, ScribbleClient scribbleClient) {
+    TextInput._instance._scribbleClients[elementIdentifier] = scribbleClient;
+  }
+
+  /// Unregisters a [ScribbleClient] with [elementIdentifier].
+  static void unregisterScribbleElement(String elementIdentifier) {
+    TextInput._instance._scribbleClients.remove(elementIdentifier);
+  }
 }
 
 /// An interface for implementing text input controls that receive text editing
@@ -2466,19 +2480,5 @@ class _PlatformTextInputControl extends TextInputControl {
       'TextInput.finishAutofillContext',
       shouldSave,
     );
-  }
-
-  /// Registers a [ScribbleClient] with [elementIdentifier] that can be focused
-  /// by the engine.
-  ///
-  /// For example, the registered [ScribbleClient] list is used to respond to
-  /// UIIndirectScribbleInteraction on an iPad.
-  static void registerScribbleElement(String elementIdentifier, ScribbleClient scribbleClient) {
-    TextInput._instance._scribbleClients[elementIdentifier] = scribbleClient;
-  }
-
-  /// Unregisters a [ScribbleClient] with [elementIdentifier].
-  static void unregisterScribbleElement(String elementIdentifier) {
-    TextInput._instance._scribbleClients.remove(elementIdentifier);
   }
 }
