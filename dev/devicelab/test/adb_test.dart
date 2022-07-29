@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// @dart = 2.8
+
 import 'package:collection/collection.dart' show ListEquality, MapEquality;
 
-import 'package:flutter_devicelab/framework/adb.dart';
+import 'package:flutter_devicelab/framework/devices.dart';
 import 'package:meta/meta.dart';
 
 import 'common.dart';
@@ -179,7 +181,6 @@ class FakeDevice extends AndroidDevice {
   FakeDevice({String deviceId}) : super(deviceId: deviceId);
 
   static String output = '';
-  static ExitErrorFactory exitErrorFactory = () => null;
 
   static List<CommandArgs> commandLog = <CommandArgs>[];
 
@@ -222,8 +223,5 @@ class FakeDevice extends AndroidDevice {
       arguments: arguments,
       environment: environment,
     ));
-    final dynamic exitError = exitErrorFactory();
-    if (exitError != null)
-      throw exitError;
   }
 }

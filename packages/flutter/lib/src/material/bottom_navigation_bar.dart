@@ -6,7 +6,6 @@ import 'dart:collection' show Queue;
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter/rendering.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 import 'bottom_navigation_bar_theme.dart';
@@ -57,7 +56,9 @@ enum BottomNavigationBarType {
 ///  * [BottomNavigationBarType.fixed], the default when there are less than
 ///    four [items]. The selected item is rendered with the
 ///    [selectedItemColor] if it's non-null, otherwise the theme's
-///    [ThemeData.primaryColor] is used. If [backgroundColor] is null, The
+///    [ColorScheme.primary] color is used for [Brightness.light] themes
+///    and [ColorScheme.secondary] for [Brightness.dark] themes.
+///    If [backgroundColor] is null, The
 ///    navigation bar's background color defaults to the [Material] background
 ///    color, [ThemeData.canvasColor] (essentially opaque white).
 ///  * [BottomNavigationBarType.shifting], the default when there are four
@@ -230,7 +231,7 @@ class BottomNavigationBar extends StatefulWidget {
   /// The [iconSize], [selectedFontSize], [unselectedFontSize], and [elevation]
   /// arguments must be non-null and non-negative.
   ///
-  /// If [selectedLabelStyle.color] and [unselectedLabelStyle.color] values
+  /// If [selectedLabelStyle].color and [unselectedLabelStyle].color values
   /// are non-null, they will be used instead of [selectedItemColor] and
   /// [unselectedItemColor].
   ///
@@ -238,8 +239,8 @@ class BottomNavigationBar extends StatefulWidget {
   /// [selectedIconTheme] and [unselectedIconTheme], and both
   /// [IconThemeData.color] and [IconThemeData.size] must be set.
   ///
-  /// If both [selectedLabelStyle.fontSize] and [selectedFontSize] are set,
-  /// [selectedLabelStyle.fontSize] will be used.
+  /// If both [selectedLabelStyle].fontSize and [selectedFontSize] are set,
+  /// [selectedLabelStyle].fontSize will be used.
   ///
   /// Only one of [selectedItemColor] and [fixedColor] can be specified. The
   /// former is preferred, [fixedColor] only exists for the sake of
@@ -288,7 +289,7 @@ class BottomNavigationBar extends StatefulWidget {
        assert(iconSize != null && iconSize >= 0.0),
        assert(
          selectedItemColor == null || fixedColor == null,
-         'Either selectedItemColor or fixedColor can be specified, but not both'
+         'Either selectedItemColor or fixedColor can be specified, but not both',
        ),
        assert(selectedFontSize != null && selectedFontSize >= 0.0),
        assert(unselectedFontSize != null && unselectedFontSize >= 0.0),
@@ -422,7 +423,7 @@ class BottomNavigationBar extends StatefulWidget {
   final bool? enableFeedback;
 
   @override
-  _BottomNavigationBarState createState() => _BottomNavigationBarState();
+  State<BottomNavigationBar> createState() => _BottomNavigationBarState();
 }
 
 // This represents a single tile in the bottom navigation bar. It is intended
@@ -655,11 +656,9 @@ class _TileIcon extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       heightFactor: 1.0,
-      child: Container(
-        child: IconTheme(
-          data: iconThemeData,
-          child: selected ? item.activeIcon : item.icon,
-        ),
+      child: IconTheme(
+        data: iconThemeData,
+        child: selected ? item.activeIcon : item.icon,
       ),
     );
   }
@@ -939,10 +938,10 @@ class _BottomNavigationBarState extends State<BottomNavigationBar> with TickerPr
     final Color themeColor;
     switch (themeData.brightness) {
       case Brightness.light:
-        themeColor = themeData.primaryColor;
+        themeColor = themeData.colorScheme.primary;
         break;
       case Brightness.dark:
-        themeColor = themeData.accentColor;
+        themeColor = themeData.colorScheme.secondary;
         break;
     }
 
@@ -985,8 +984,7 @@ class _BottomNavigationBarState extends State<BottomNavigationBar> with TickerPr
         unselectedLabelStyle: effectiveUnselectedLabelStyle,
         enableFeedback: widget.enableFeedback ?? bottomTheme.enableFeedback ?? true,
         onTap: () {
-          if (widget.onTap != null)
-            widget.onTap!(i);
+          widget.onTap?.call(i);
         },
         colorTween: colorTween,
         flex: _evaluateFlex(_animations[i]),

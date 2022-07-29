@@ -22,6 +22,10 @@ const String _kTestBrowserKey = 'FLUTTER_TEST_BROWSER';
 /// A client for uploading image tests and making baseline requests to the
 /// Flutter Gold Dashboard.
 class SkiaGoldClient {
+  /// Creates a [SkiaGoldClient] with the given [workDirectory].
+  ///
+  /// All other parameters are optional. They may be provided in tests to
+  /// override the defaults for [fs], [process], [platform], and [httpClient].
   SkiaGoldClient(
     this.workDirectory, {
     this.fs = const LocalFileSystem(),
@@ -364,7 +368,7 @@ class SkiaGoldClient {
     };
     if (platform.environment[_kTestBrowserKey] != null) {
       keys['Browser'] = platform.environment[_kTestBrowserKey];
-      keys['Platform'] = keys['Platform'] + '-browser';
+      keys['Platform'] = '${keys['Platform']}-browser';
     }
     return json.encode(keys);
   }
@@ -372,7 +376,7 @@ class SkiaGoldClient {
   /// Removes the file extension from the [fileName] to represent the test name
   /// properly.
   String cleanTestName(String fileName) {
-    return fileName.split(path.extension(fileName.toString()))[0];
+    return fileName.split(path.extension(fileName))[0];
   }
 
   /// Returns a boolean value to prevent the client from re-authorizing itself

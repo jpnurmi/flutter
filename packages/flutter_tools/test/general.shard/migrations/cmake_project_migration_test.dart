@@ -2,18 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:file/file.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_tools/src/base/logger.dart';
-import 'package:flutter_tools/src/base/platform.dart';
 import 'package:flutter_tools/src/base/project_migrator.dart';
 import 'package:flutter_tools/src/base/terminal.dart';
+import 'package:flutter_tools/src/cmake_project.dart';
 import 'package:flutter_tools/src/migrations/cmake_custom_command_migration.dart';
-import 'package:flutter_tools/src/project.dart';
-import 'package:meta/meta.dart';
-import 'package:mockito/mockito.dart';
+import 'package:test/fake.dart';
 
 import '../../src/common.dart';
 
@@ -32,25 +28,21 @@ void main () {
     });
 
     group('migrate add_custom_command() to use VERBATIM', () {
-      MemoryFileSystem memoryFileSystem;
-      BufferLogger testLogger;
-      MockCmakeProject mockCmakeProject;
-      File managedCmakeFile;
+      late MemoryFileSystem memoryFileSystem;
+      late BufferLogger testLogger;
+      late FakeCmakeProject mockCmakeProject;
+      late File managedCmakeFile;
 
       setUp(() {
         memoryFileSystem = MemoryFileSystem.test();
         managedCmakeFile = memoryFileSystem.file('CMakeLists.txtx');
 
         testLogger = BufferLogger(
-          terminal: AnsiTerminal(
-            stdio: null,
-            platform: const LocalPlatform(),
-          ),
+          terminal: Terminal.test(),
           outputPreferences: OutputPreferences.test(),
         );
 
-        mockCmakeProject = MockCmakeProject();
-        when(mockCmakeProject.managedCmakeFile).thenReturn(managedCmakeFile);
+        mockCmakeProject = FakeCmakeProject(managedCmakeFile);
       });
 
       testWithoutContext('skipped if files are missing', () {
@@ -179,11 +171,16 @@ add_custom_command(
   });
 }
 
-class MockCmakeProject extends Mock implements CmakeBasedProject {}
+class FakeCmakeProject extends Fake implements CmakeBasedProject {
+  FakeCmakeProject(this.managedCmakeFile);
+
+  @override
+  final File managedCmakeFile;
+}
 
 class FakeCmakeMigrator extends ProjectMigrator {
-  FakeCmakeMigrator({@required this.succeeds})
-    : super(null);
+  FakeCmakeMigrator({required this.succeeds})
+    : super(BufferLogger.test());
 
   final bool succeeds;
 

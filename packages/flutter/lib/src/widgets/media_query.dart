@@ -265,16 +265,16 @@ class MediaQueryData {
   ///
   /// @override
   /// Widget build(BuildContext context) {
-  ///   EdgeInsets systemGestureInsets = MediaQuery.of(context).systemGestureInsets;
+  ///   final EdgeInsets systemGestureInsets = MediaQuery.of(context).systemGestureInsets;
   ///   return Scaffold(
-  ///     appBar: AppBar(title: Text('Pad Slider to avoid systemGestureInsets')),
+  ///     appBar: AppBar(title: const Text('Pad Slider to avoid systemGestureInsets')),
   ///     body: Padding(
   ///       padding: EdgeInsets.only( // only left and right padding are needed here
   ///         left: systemGestureInsets.left,
   ///         right: systemGestureInsets.right,
   ///       ),
   ///       child: Slider(
-  ///         value: _currentValue.toDouble(),
+  ///         value: _currentValue,
   ///         onChanged: (double newValue) {
   ///           setState(() {
   ///             _currentValue = newValue;

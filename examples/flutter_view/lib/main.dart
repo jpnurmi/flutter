@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
-  runApp(FlutterView());
+  runApp(const FlutterView());
 }
 
 class FlutterView extends StatelessWidget {
+  const FlutterView({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -18,14 +20,16 @@ class FlutterView extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.grey,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({Key? key}) : super(key: key);
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -64,7 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Center(
               child: Text(
                 'Platform button tapped $_counter time${ _counter == 1 ? '' : 's' }.',
-                style: const TextStyle(fontSize: 17.0)),
+                style: const TextStyle(fontSize: 17.0),
+              ),
             ),
           ),
           Container(

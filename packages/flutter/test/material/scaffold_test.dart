@@ -2,6 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// TODO(gspencergoog): Remove this tag once this test's state leaks/test
+// dependency have been fixed.
+// https://github.com/flutter/flutter/issues/85160
+// Fails with "flutter test --test-randomize-ordering-seed=123"
+@Tags(<String>['no-shuffle'])
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
@@ -17,19 +23,20 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
-          drawer: Container(
-            color: Colors.blue,
-          ),
-          onDrawerChanged: (bool isOpen) {
-            isDrawerOpen = isOpen;
-          },
-          endDrawer: Container(
-            color: Colors.green,
-          ),
-          onEndDrawerChanged: (bool isOpen) {
-            isEndDrawerOpen = isOpen;
-          },
-          body: Container()),
+        drawer: Container(
+          color: Colors.blue,
+        ),
+        onDrawerChanged: (bool isOpen) {
+          isDrawerOpen = isOpen;
+        },
+        endDrawer: Container(
+          color: Colors.green,
+        ),
+        onEndDrawerChanged: (bool isOpen) {
+          isEndDrawerOpen = isOpen;
+        },
+        body: Container(),
+      ),
     ));
 
     final ScaffoldState scaffoldState = tester.state(find.byType(Scaffold));
@@ -492,8 +499,10 @@ void main() {
         ),
       ),
     );
-    expect(tester.getBottomLeft(_findButtonBar()), const Offset(10.0, 560.0));
-    expect(tester.getBottomRight(_findButtonBar()), const Offset(770.0, 560.0));
+
+    final Finder buttonsBar = find.ancestor(of: find.byType(OverflowBar), matching: find.byType(Padding)).first;
+    expect(tester.getBottomLeft(buttonsBar), const Offset(10.0, 560.0));
+    expect(tester.getBottomRight(buttonsBar), const Offset(770.0, 560.0));
   });
 
   testWidgets('Persistent bottom buttons bottom padding is not consumed by viewInsets', (WidgetTester tester) async {
@@ -560,7 +569,7 @@ void main() {
   });
 
   group('close button', () {
-    Future<void> expectCloseIcon(WidgetTester tester, PageRoute<void> routeBuilder(), String type) async {
+    Future<void> expectCloseIcon(WidgetTester tester, PageRoute<void> Function() routeBuilder, String type) async {
       const IconData expectedIcon = Icons.close;
       await tester.pumpWidget(
         MaterialApp(
@@ -713,7 +722,7 @@ void main() {
                 },
               ),
               bottomNavigationBar: const BottomAppBar(
-                child: SizedBox(height: 48.0,),
+                child: SizedBox(height: 48.0),
               ),
             ),
           ),
@@ -783,7 +792,7 @@ void main() {
                     builder: (BuildContext context) {
                       mediaQueryTop = MediaQuery.of(context).padding.top;
                       return Container(key: bodyKey);
-                    }
+                    },
                   ),
                 );
               },
@@ -949,7 +958,7 @@ void main() {
                   ),
                 ),
               ],
-              drawer: Container(
+              drawer: SizedBox(
                 key: drawer,
                 width: 204.0,
                 child: SafeArea(
@@ -1051,7 +1060,7 @@ void main() {
                   ),
                 ),
               ],
-              drawer: Container(
+              drawer: SizedBox(
                 key: drawer,
                 width: 204.0,
                 child: SafeArea(
@@ -1716,7 +1725,7 @@ void main() {
                 title: const Text('Title'),
               ),
             );
-          }
+          },
         ),
       ),
     );
@@ -1831,9 +1840,7 @@ void main() {
               body: Center(
                 child: Container(),
               ),
-              bottomSheet: Container(
-                child: const Text('Bottom sheet'),
-              ),
+              bottomSheet: const Text('Bottom sheet'),
             ),
           ),
         );
@@ -1843,20 +1850,20 @@ void main() {
             final ThemeData themeData = Theme.of(context);
             return Container(
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: themeData.disabledColor))
+                border: Border(top: BorderSide(color: themeData.disabledColor)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Text('This is a Material persistent bottom sheet. Drag downwards to dismiss it.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: themeData.accentColor,
+                    color: themeData.colorScheme.secondary,
                     fontSize: 24.0,
                   ),
                 ),
               ),
             );
-          },);
+          });
         } on FlutterError catch (e) {
           error = e;
         } finally {
@@ -1869,11 +1876,12 @@ void main() {
             '   showBottomSheet().\n',
           ));
         }
-      }
+      },
     );
 
-    testWidgets('didUpdate bottomSheet while a previous bottom sheet is still displayed',
-        (WidgetTester tester) async {
+    testWidgets(
+      'didUpdate bottomSheet while a previous bottom sheet is still displayed',
+      (WidgetTester tester) async {
         final GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
         const Key buttonKey = Key('button');
         final List<FlutterErrorDetails> errors = <FlutterErrorDetails>[];
@@ -1891,11 +1899,11 @@ void main() {
                     onPressed: () {
                       state += 1;
                       setState(() {});
-                    }
+                    },
                   ),
                   bottomSheet: state == 0 ? null : const SizedBox(),
                 );
-              }
+              },
             ),
           ),
         );
@@ -1920,9 +1928,10 @@ void main() {
           '   displayed with showBottomSheet() is still visible.\n'
           '   Use the PersistentBottomSheetController returned by\n'
           '   showBottomSheet() to close the old bottom sheet before creating a\n'
-          '   Scaffold with a (non null) bottomSheet.\n'
+          '   Scaffold with a (non null) bottomSheet.\n',
         );
-    });
+      },
+    );
 
     testWidgets('Call to Scaffold.of() without context', (WidgetTester tester) async {
       await tester.pumpWidget(
@@ -1968,7 +1977,8 @@ void main() {
         ),
       );
       expect(error.diagnostics[4], isA<DiagnosticsProperty<Element>>());
-      expect(error.toStringDeep(),
+      expect(
+        error.toStringDeep(),
         'FlutterError\n'
         '   Scaffold.of() called with a context that does not contain a\n'
         '   Scaffold.\n'
@@ -1991,7 +2001,7 @@ void main() {
         '   to the Scaffold, then use the key.currentState property to obtain\n'
         '   the ScaffoldState rather than using the Scaffold.of() function.\n'
         '   The context used was:\n'
-        '     Builder\n'
+        '     Builder\n',
       );
       await tester.pumpAndSettle();
     });
@@ -2037,7 +2047,8 @@ void main() {
         ),
       );
       expect(error.diagnostics[4], isA<DiagnosticsProperty<Element>>());
-      expect(error.toStringDeep(),
+      expect(
+        error.toStringDeep(),
         'FlutterError\n'
         '   Scaffold.geometryOf() called with a context that does not contain\n'
         '   a Scaffold.\n'
@@ -2056,7 +2067,7 @@ void main() {
         '   new inner widgets, and then in these inner widgets you would use\n'
         '   Scaffold.geometryOf().\n'
         '   The context used was:\n'
-        '     Builder\n'
+        '     Builder\n',
       );
       await tester.pumpAndSettle();
     });
@@ -2108,12 +2119,12 @@ void main() {
                   scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
                 },
                 behavior: HitTestBehavior.opaque,
-                child: Container(
+                child: const SizedBox(
                   height: 100.0,
                   width: 100.0,
                 ),
               );
-            }
+            },
           ),
         ),
       ),
@@ -2145,12 +2156,12 @@ void main() {
                   ScaffoldMessenger.of(context);
                 },
                 behavior: HitTestBehavior.opaque,
-                child: Container(
+                child: const SizedBox(
                   height: 100.0,
                   width: 100.0,
                 ),
               );
-            }
+            },
           ),
         ),
       ),
@@ -2159,6 +2170,7 @@ void main() {
     FlutterError.onError = oldHandler;
 
     expect(exceptions.length, 1);
+    // ignore: avoid_dynamic_calls
     expect(exceptions.single.runtimeType, FlutterError);
     final FlutterError error = exceptions.first as FlutterError;
     expect(error.diagnostics.length, 5);
@@ -2192,14 +2204,88 @@ void main() {
       '     PhysicalModel\n'
       '     AnimatedPhysicalModel\n'
       '     Material\n'
+      '     _ScrollNotificationObserverScope\n'
+      '     NotificationListener<ScrollNotification>\n'
+      '     ScrollNotificationObserver\n'
       '     _ScaffoldScope\n'
       '     Scaffold\n'
       '     MediaQuery\n'
       '     Directionality\n'
       '     [root]\n'
       '   Typically, the ScaffoldMessenger widget is introduced by the\n'
-      '   MaterialApp at the top of your application widget tree.\n'
+      '   MaterialApp at the top of your application widget tree.\n',
     ));
+  });
+
+  testWidgets('ScaffoldMessenger checks for nesting when a new Scaffold is registered', (WidgetTester tester) async {
+    // Regression test for https://github.com/flutter/flutter/issues/77251
+    const String snackBarContent = 'SnackBar Content';
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (BuildContext context) => Scaffold(
+          body: Scaffold(
+            body: TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) {
+                      return Scaffold(
+                        body: Column(
+                          children: <Widget>[
+                            TextButton(
+                              onPressed: () {
+                                const SnackBar snackBar = SnackBar(
+                                  content: Text(snackBarContent),
+                                  behavior: SnackBarBehavior.floating,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                              },
+                              child: const Text('Show SnackBar'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, null);
+                              },
+                              child: const Text('Pop route'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+              child: const Text('Push route'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    expect(find.text(snackBarContent), findsNothing);
+    await tester.tap(find.text('Push route'));
+    await tester.pumpAndSettle();
+    expect(find.text(snackBarContent), findsNothing);
+    expect(find.text('Pop route'), findsOneWidget);
+
+    // Show SnackBar on second page
+    await tester.tap(find.text('Show SnackBar'));
+    await tester.pump();
+    expect(find.text(snackBarContent), findsOneWidget);
+    // Pop the second page, the SnackBar completes a hero animation to the next route.
+    // If we have not handled the nested Scaffolds properly, this will throw an
+    // exception as duplicate SnackBars on the first route would have a common hero tag.
+    await tester.tap(find.text('Pop route'));
+    await tester.pump();
+    // There are SnackBars two during the execution of the hero animation.
+    expect(find.text(snackBarContent), findsNWidgets(2));
+    await tester.pumpAndSettle();
+    expect(find.text(snackBarContent), findsOneWidget);
+    // Allow the SnackBar to animate out
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    expect(find.text(snackBarContent), findsNothing);
   });
 }
 
@@ -2212,7 +2298,7 @@ class _GeometryListenerState extends State<_GeometryListener> {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: cache
+      painter: cache,
     );
   }
 
@@ -2292,11 +2378,4 @@ class _CustomPageRoute<T> extends PageRoute<T> {
   Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
     return child;
   }
-}
-
-// What was the Scaffold's ButtonBar when many of these tests were written,
-// is now a Container with an OverflowBar child. The Container's size and location
-// match the original ButtonBar's size and location.
-Finder _findButtonBar() {
-  return find.ancestor(of: find.byType(OverflowBar), matching: find.byType(Container)).first;
 }

@@ -40,6 +40,13 @@ void writeFile(String path, String content) {
     ..setLastModifiedSync(DateTime.now().add(const Duration(seconds: 10)));
 }
 
+void writeBytesFile(String path, List<int> content) {
+  fileSystem.file(path)
+    ..createSync(recursive: true)
+    ..writeAsBytesSync(content)
+    ..setLastModifiedSync(DateTime.now().add(const Duration(seconds: 10)));
+}
+
 void writePackages(String folder) {
   writeFile(fileSystem.path.join(folder, '.packages'), '''
 test:${fileSystem.path.join(fileSystem.currentDirectory.path, 'lib')}/
@@ -96,7 +103,7 @@ Future<void> pollForServiceExtensionValue<T>({
     }
   }
   fail(
-    'Did not find expected value for service extension \'$extension\'. All call'
-    ' attempts responded with \'$continuePollingValue\'.',
+    "Did not find expected value for service extension '$extension'. All call"
+    " attempts responded with '$continuePollingValue'.",
   );
 }

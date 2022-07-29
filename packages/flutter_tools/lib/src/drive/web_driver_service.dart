@@ -17,7 +17,7 @@ import '../base/process.dart';
 import '../build_info.dart';
 import '../convert.dart';
 import '../device.dart';
-import '../globals.dart' as globals;
+import '../globals_null_migrated.dart' as globals;
 import '../project.dart';
 import '../resident_runner.dart';
 import '../web/web_runner.dart';
@@ -72,6 +72,10 @@ class WebDriverService extends DriverService {
       stayResident: false,
       urlTunneller: null,
       flutterProject: FlutterProject.current(),
+      fileSystem: globals.fs,
+      usage: globals.flutterUsage,
+      logger: globals.logger,
+      systemClock: globals.systemClock,
     );
     final Completer<void> appStartedCompleter = Completer<void>.sync();
     final int result = await _residentRunner.run(
@@ -93,6 +97,7 @@ class WebDriverService extends DriverService {
     bool androidEmulator,
     int driverPort,
     List<String> browserDimension,
+    String profileMemory,
   }) async {
     async_io.WebDriver webDriver;
     final Browser browser = _browserNameToEnum(browserName);
@@ -104,9 +109,11 @@ class WebDriverService extends DriverService {
       );
     } on Exception catch (ex) {
       throwToolExit(
-        'Unable to start WebDriver Session for Flutter for Web testing. \n'
-        'Make sure you have the correct WebDriver Server running at $driverPort. \n'
-        'Make sure the WebDriver Server matches option --browser-name. \n'
+        'Unable to start WebDriver Session for Flutter for Web testing.\n'
+        'Make sure you have the correct WebDriver Server running at $driverPort.\n'
+        'Make sure the WebDriver Server matches option --browser-name.\n'
+        'For more information see: '
+        'https://flutter.dev/docs/testing/integration-tests#running-in-a-browser\n'
         '$ex'
       );
     }

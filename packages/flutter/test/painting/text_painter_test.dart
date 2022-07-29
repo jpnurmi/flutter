@@ -4,6 +4,7 @@
 
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -832,6 +833,144 @@ void main() {
     )!;
     expect(caretHeight, 50.0);
   }, skip: isBrowser); // https://github.com/flutter/flutter/issues/56308
+
+  group('TextPainter line-height', () {
+    test('half-leading', (){
+      const TextStyle style = TextStyle(
+        height: 20,
+        fontSize: 1,
+        leadingDistribution: TextLeadingDistribution.even,
+      );
+
+      final TextPainter painter = TextPainter()
+        ..textDirection = TextDirection.ltr
+        ..text = const TextSpan(text: 'A', style: style)
+        ..layout();
+
+      final Rect glyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+
+      final RelativeRect insets = RelativeRect.fromSize(glyphBox, painter.size);
+      // The glyph box is centered.
+      expect(insets.top, insets.bottom);
+      // The glyph box is exactly 1 logical pixel high.
+      expect(insets.top, (20 - 1) / 2);
+    });
+
+    test('half-leading with small height', (){
+      const TextStyle style = TextStyle(
+        height: 0.1,
+        fontSize: 10,
+        leadingDistribution: TextLeadingDistribution.even,
+      );
+
+      final TextPainter painter = TextPainter()
+        ..textDirection = TextDirection.ltr
+        ..text = const TextSpan(text: 'A', style: style)
+        ..layout();
+
+      final Rect glyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+
+      final RelativeRect insets = RelativeRect.fromSize(glyphBox, painter.size);
+      // The glyph box is still centered.
+      expect(insets.top, insets.bottom);
+      // The glyph box is exactly 10 logical pixel high (the height multiplier
+      // does not scale the glyph). Negative leading.
+      expect(insets.top, (1 - 10) / 2);
+    });
+
+    test('half-leading with leading trim', (){
+      const TextStyle style = TextStyle(
+        height: 0.1,
+        fontSize: 10,
+        leadingDistribution: TextLeadingDistribution.even,
+      );
+
+      final TextPainter painter = TextPainter()
+        ..textDirection = TextDirection.ltr
+        ..text = const TextSpan(text: 'A', style: style)
+        ..textHeightBehavior = const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+            leadingDistribution: TextLeadingDistribution.proportional,
+          )
+        ..layout();
+
+      final Rect glyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+
+      expect(painter.size, glyphBox.size);
+      // The glyph box is still centered.
+      expect(glyphBox.topLeft, Offset.zero);
+    });
+
+    test('TextLeadingDistribution falls back to paragraph style', (){
+      const TextStyle style = TextStyle(height: 20, fontSize: 1);
+      final TextPainter painter = TextPainter()
+        ..textDirection = TextDirection.ltr
+        ..text = const TextSpan(text: 'A', style: style)
+        ..textHeightBehavior = const TextHeightBehavior(
+            leadingDistribution: TextLeadingDistribution.even,
+          )
+        ..layout();
+
+      final Rect glyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+
+      // Still uses half-leading.
+      final RelativeRect insets = RelativeRect.fromSize(glyphBox, painter.size);
+      expect(insets.top, insets.bottom);
+      expect(insets.top, (20 - 1) / 2);
+    });
+
+    test('TextLeadingDistribution does nothing if height multiplier is null', (){
+      const TextStyle style = TextStyle(fontSize: 1);
+      final TextPainter painter = TextPainter()
+        ..textDirection = TextDirection.ltr
+        ..text = const TextSpan(text: 'A', style: style)
+        ..textHeightBehavior = const TextHeightBehavior(
+            leadingDistribution: TextLeadingDistribution.even,
+          )
+        ..layout();
+
+      final Rect glyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+
+      painter.textHeightBehavior = const TextHeightBehavior(
+        leadingDistribution: TextLeadingDistribution.proportional,
+      );
+      painter.layout();
+
+      final Rect newGlyphBox = painter.getBoxesForSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      ).first.toRect();
+      expect(glyphBox, newGlyphBox);
+    });
+  }, skip: isBrowser);
+
+  test('TextPainter handles invalid UTF-16', () {
+    Object? exception;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      exception = details.exception;
+    };
+
+    final TextPainter painter = TextPainter()
+      ..textDirection = TextDirection.ltr;
+
+    const String text = 'Hello\uD83DWorld';
+    const double fontSize = 20.0;
+    painter.text = const TextSpan(text: text, style: TextStyle(fontSize: fontSize));
+    painter.layout();
+    // The layout should include one replacement character.
+    expect(painter.width, equals(fontSize));
+    expect(exception, isNotNull);
+  }, skip: kIsWeb);
 }
 
 class MockCanvas extends Fake implements Canvas {

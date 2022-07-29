@@ -239,10 +239,12 @@ class BackdropTitle extends AnimatedWidget {
 
 // This widget is essentially the backdrop itself.
 class BackdropDemo extends StatefulWidget {
+  const BackdropDemo({Key? key}) : super(key: key);
+
   static const String routeName = '/material/backdrop';
 
   @override
-  _BackdropDemoState createState() => _BackdropDemoState();
+  State<BackdropDemo> createState() => _BackdropDemoState();
 }
 
 class _BackdropDemoState extends State<BackdropDemo> with SingleTickerProviderStateMixin {

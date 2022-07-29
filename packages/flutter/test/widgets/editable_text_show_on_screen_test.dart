@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/src/foundation/constants.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/material.dart';
 
 class _TestSliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
   _TestSliverPersistentHeaderDelegate({
@@ -49,7 +49,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Center(
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             controller: scrollController,
@@ -61,7 +61,7 @@ void main() {
                 style: textStyle,
                 cursorColor: cursorColor,
               ),
-              Container(
+              const SizedBox(
                 height: 350.0,
               ),
             ],
@@ -88,12 +88,12 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Center(
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             controller: scrollController,
             children: <Widget>[
-              Container(
+              const SizedBox(
                 height: 200.0,
               ),
               EditableText(
@@ -104,7 +104,7 @@ void main() {
                 style: textStyle,
                 cursorColor: cursorColor,
               ),
-              Container(
+              const SizedBox(
                 height: 850.0,
               ),
             ],
@@ -134,12 +134,12 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Center(
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             controller: scrollController,
             children: <Widget>[
-              Container(
+              const SizedBox(
                 height: 350.0,
               ),
               EditableText(
@@ -149,7 +149,7 @@ void main() {
                 style: textStyle,
                 cursorColor: cursorColor,
               ),
-              Container(
+              const SizedBox(
                 height: 350.0,
               ),
             ],
@@ -183,13 +183,13 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Center(
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             physics: const NoImplicitScrollPhysics(),
             controller: scrollController,
             children: <Widget>[
-              Container(
+              const SizedBox(
                 height: 350.0,
               ),
               EditableText(
@@ -199,7 +199,7 @@ void main() {
                 style: textStyle,
                 cursorColor: cursorColor,
               ),
-              Container(
+              const SizedBox(
                 height: 350.0,
               ),
             ],
@@ -244,10 +244,10 @@ void main() {
                     color: Colors.red,
                   ),
                   Container(
+                    color: Colors.green,
                     child: TextField(
                       controller: textController,
                     ),
-                    color: Colors.green,
                   ),
                   Container(
                     color: Colors.red,
@@ -281,7 +281,7 @@ void main() {
 
     await tester.pumpWidget(MaterialApp(
       home: Center(
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             controller: scrollController,
@@ -333,12 +333,12 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Align(
         alignment: Alignment.bottomCenter,
-        child: Container(
+        child: SizedBox(
           height: 300.0,
           child: ListView(
             controller: scrollController,
             children: <Widget>[
-              Container(
+              const SizedBox(
                 key: container,
                 height: 200.0,
               ),
@@ -350,7 +350,7 @@ void main() {
                 style: textStyle,
                 cursorColor: cursorColor,
               ),
-              Container(
+              const SizedBox(
                 height: 400.0,
               ),
             ],
@@ -406,7 +406,7 @@ void main() {
                     ),
                   )
                   : SliverToBoxAdapter(
-                    child: Container(
+                    child: SizedBox(
                       height: 100.0,
                       child: Text('Tile $i'),
                     ),
@@ -427,7 +427,8 @@ void main() {
       await tester.pumpAndSettle();
       // The scroll offset should remain the same.
       expect(controller.offset, 100.0 * 15);
-  });
+    },
+  );
 
   testWidgets(
     'A pinned persistent header should not scroll when its descendant EditableText gains focus (no animation)',
@@ -469,7 +470,7 @@ void main() {
                       ),
                     )
                     : SliverToBoxAdapter(
-                      child: Container(
+                      child: SizedBox(
                         height: 100.0,
                         child: Text('Tile $i'),
                       ),
@@ -490,7 +491,8 @@ void main() {
       await tester.pumpAndSettle();
       // The scroll offset should remain the same.
       expect(controller.offset, 100.0 * 15);
-  });
+    },
+  );
 
   void testShowCaretOnScreen({ required bool readOnly }) {
     group('EditableText._showCaretOnScreen, readOnly=$readOnly', () {
@@ -646,7 +648,10 @@ void main() {
 
         // Change the selection. Show caret on screen even when readyOnly is
         // false.
-        state.textEditingValue = state.textEditingValue.copyWith(selection: const TextSelection.collapsed(offset: 90));
+        state.userUpdateTextEditingValue(
+          state.textEditingValue.copyWith(selection: const TextSelection.collapsed(offset: 90)),
+          null,
+        );
         await tester.pumpAndSettle();
         expect(isCaretOnScreen(tester), isTrue);
         expect(scrollController.offset, greaterThan(0.0));
@@ -667,7 +672,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(isCaretOnScreen(tester), isFalse);
 
-        state.textEditingValue = state.textEditingValue.copyWith(selection: const TextSelection.collapsed(offset: 100));
+        state.userUpdateTextEditingValue(
+          state.textEditingValue.copyWith(selection: const TextSelection.collapsed(offset: 100)),
+          null,
+        );
         await tester.pumpAndSettle();
         expect(isCaretOnScreen(tester), isTrue);
         expect(scrollController.offset, greaterThan(0.0));

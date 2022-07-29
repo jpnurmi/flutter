@@ -72,7 +72,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedContainerWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -93,7 +93,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedPaddingWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -114,7 +114,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedAlignWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -135,7 +135,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedPositionedWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -156,7 +156,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedPositionedDirectionalWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -177,7 +177,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedOpacityWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -196,7 +196,7 @@ void main() {
       child: TestAnimatedWidget(
         switchKey: switchKey,
         state: _TestAnimatedOpacityWidgetState(),
-      )
+      ),
     ));
 
     final Finder switchFinder = find.byKey(switchKey);
@@ -244,7 +244,7 @@ void main() {
       child: TestAnimatedWidget(
         switchKey: switchKey,
         state: _TestSliverAnimatedOpacityWidgetState(),
-      )
+      ),
     ));
 
     final Finder switchFinder = find.byKey(switchKey);
@@ -273,7 +273,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedDefaultTextStyleWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -294,7 +294,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedPhysicalModelWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -315,7 +315,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestTweenAnimationBuilderWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -336,7 +336,7 @@ void main() {
         callback: mockOnEndFunction.handler,
         switchKey: switchKey,
         state: _TestAnimatedThemeWidgetState(),
-      )
+      ),
     ));
 
     final Finder widgetFinder = find.byKey(switchKey);
@@ -349,6 +349,59 @@ void main() {
     expect(mockOnEndFunction.called, 0);
     await tester.pump(additionalDelay);
     expect(mockOnEndFunction.called, 1);
+  });
+
+  testWidgets('Ensure CurvedAnimations are disposed on widget change',
+      (WidgetTester tester) async {
+    final GlobalKey<ImplicitlyAnimatedWidgetState<AnimatedOpacity>> key =
+        GlobalKey<ImplicitlyAnimatedWidgetState<AnimatedOpacity>>();
+    final ValueNotifier<Curve> curve = ValueNotifier<Curve>(const Interval(0.0, 0.5));
+    await tester.pumpWidget(wrap(
+      child: ValueListenableBuilder<Curve>(
+        valueListenable: curve,
+        builder: (_, Curve c, __) => AnimatedOpacity(
+            key: key,
+            opacity: 1.0,
+            duration: const Duration(seconds: 1),
+            curve: c,
+            child: Container(color: Colors.green)),
+      ),
+    ));
+
+    final ImplicitlyAnimatedWidgetState<AnimatedOpacity>? firstState = key.currentState;
+    final Animation<double>? firstAnimation = firstState?.animation;
+    if (firstAnimation == null)
+      fail('animation was null!');
+
+    final CurvedAnimation firstCurvedAnimation =
+        firstAnimation as CurvedAnimation;
+
+    expect(firstCurvedAnimation.isDisposed, isFalse);
+
+    curve.value = const Interval(0.0, 0.6);
+    await tester.pumpAndSettle();
+
+    final ImplicitlyAnimatedWidgetState<AnimatedOpacity>? secondState = key.currentState;
+    final Animation<double>? secondAnimation = secondState?.animation;
+    if (secondAnimation == null)
+      fail('animation was null!');
+
+    final CurvedAnimation secondCurvedAnimation = secondAnimation as CurvedAnimation;
+
+    expect(firstState, equals(secondState));
+    expect(firstAnimation, isNot(equals(secondAnimation)));
+
+    expect(firstCurvedAnimation.isDisposed, isTrue);
+    expect(secondCurvedAnimation.isDisposed, isFalse);
+
+    await tester.pumpWidget(
+      wrap(
+        child: const Offstage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(secondCurvedAnimation.isDisposed, isTrue);
   });
 }
 
@@ -406,10 +459,10 @@ class _TestAnimatedContainerWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedContainer(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       width: toggle ? 10 : 20,
+      child: child,
     );
   }
 }
@@ -418,11 +471,11 @@ class _TestAnimatedPaddingWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedPadding(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       padding:
       toggle ? const EdgeInsets.all(8.0) : const EdgeInsets.all(16.0),
+      child: child,
     );
   }
 }
@@ -431,10 +484,10 @@ class _TestAnimatedAlignWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedAlign(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       alignment: toggle ? Alignment.topLeft : Alignment.bottomRight,
+      child: child,
     );
   }
 }
@@ -443,10 +496,10 @@ class _TestAnimatedPositionedWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedPositioned(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       left: toggle ? 10 : 20,
+      child: child,
     );
   }
 }
@@ -455,10 +508,10 @@ class _TestAnimatedPositionedDirectionalWidgetState extends _TestAnimatedWidgetS
   @override
   Widget getAnimatedWidget() {
     return AnimatedPositionedDirectional(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       start: toggle ? 10 : 20,
+      child: child,
     );
   }
 }
@@ -467,10 +520,10 @@ class _TestAnimatedOpacityWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedOpacity(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       opacity: toggle ? 1.0 : 0.0,
+      child: child,
     );
   }
 }
@@ -514,12 +567,13 @@ class _TestAnimatedDefaultTextStyleWidgetState extends _TestAnimatedWidgetState 
   @override
   Widget getAnimatedWidget() {
     return AnimatedDefaultTextStyle(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       style: toggle
         ? const TextStyle(fontStyle: FontStyle.italic)
-        : const TextStyle(fontStyle: FontStyle.normal));
+        : const TextStyle(fontStyle: FontStyle.normal),
+      child: child,
+    );
   }
 }
 
@@ -527,13 +581,13 @@ class _TestAnimatedPhysicalModelWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedPhysicalModel(
-      child: child,
       duration: duration,
       onEnd: widget.callback,
       color: toggle ? Colors.red : Colors.green,
       elevation: 0,
       shadowColor: Colors.blue,
       shape: BoxShape.rectangle,
+      child: child,
     );
   }
 }
@@ -542,15 +596,15 @@ class _TestTweenAnimationBuilderWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return TweenAnimationBuilder<double>(
-      child: child,
       tween: Tween<double>(begin: 1, end: 2),
       duration: duration,
       onEnd: widget.callback,
+      child: child,
       builder: (BuildContext context, double? size, Widget? child) {
-        return Container(
-          child: child,
+        return SizedBox(
           width: size,
           height: size,
+          child: child,
         );
       },
     );
@@ -561,10 +615,10 @@ class _TestAnimatedThemeWidgetState extends _TestAnimatedWidgetState {
   @override
   Widget getAnimatedWidget() {
     return AnimatedTheme(
-      child: child,
       data: toggle ? ThemeData.dark() : ThemeData.light(),
       duration: duration,
       onEnd: widget.callback,
+      child: child,
     );
   }
 }

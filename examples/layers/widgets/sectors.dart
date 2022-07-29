@@ -16,6 +16,8 @@ RenderBoxToRenderSectorAdapter initCircle() {
 }
 
 class SectorApp extends StatefulWidget {
+  const SectorApp({Key? key}) : super(key: key);
+
   @override
   SectorAppState createState() => SectorAppState();
 }
@@ -88,12 +90,21 @@ class SectorAppState extends State<SectorApp> {
     });
   }
 
+  void recursivelyDisposeChildren(RenderObject parent) {
+    parent.visitChildren((RenderObject child) {
+      recursivelyDisposeChildren(child);
+      child.dispose();
+    });
+  }
+
   Widget buildBody() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 25.0),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
               ElevatedButton(
                 onPressed: _enabledAdd ? addSector : null,
@@ -103,7 +114,12 @@ class SectorAppState extends State<SectorApp> {
                       Container(
                         padding: const EdgeInsets.all(4.0),
                         margin: const EdgeInsets.only(right: 10.0),
-                        child: WidgetToRenderBoxAdapter(renderBox: sectorAddIcon),
+                        child: WidgetToRenderBoxAdapter(
+                          renderBox: sectorAddIcon,
+                          onUnmount: () {
+                            recursivelyDisposeChildren(sectorAddIcon);
+                          },
+                        ),
                       ),
                       const Text('ADD SECTOR'),
                     ],
@@ -118,7 +134,12 @@ class SectorAppState extends State<SectorApp> {
                       Container(
                         padding: const EdgeInsets.all(4.0),
                         margin: const EdgeInsets.only(right: 10.0),
-                        child: WidgetToRenderBoxAdapter(renderBox: sectorRemoveIcon),
+                        child: WidgetToRenderBoxAdapter(
+                          renderBox: sectorRemoveIcon,
+                          onUnmount: () {
+                            recursivelyDisposeChildren(sectorRemoveIcon);
+                          },
+                        ),
                       ),
                       const Text('REMOVE SECTOR'),
                     ],
@@ -126,24 +147,25 @@ class SectorAppState extends State<SectorApp> {
                 ),
               ),
             ],
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
           ),
         ),
         Expanded(
           child: Container(
             margin: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
-              border: Border.all()
+              border: Border.all(),
             ),
             padding: const EdgeInsets.all(8.0),
             child: WidgetToRenderBoxAdapter(
               renderBox: sectors,
               onBuild: doUpdates,
+              onUnmount: () {
+                recursivelyDisposeChildren(sectors);
+              },
             ),
           ),
         ),
       ],
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
     );
   }
 
@@ -163,5 +185,5 @@ class SectorAppState extends State<SectorApp> {
 }
 
 void main() {
-  runApp(SectorApp());
+  runApp(const SectorApp());
 }
