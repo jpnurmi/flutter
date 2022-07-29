@@ -2206,15 +2206,17 @@ class TextInput {
 ///           visible: visible,
 ///           child: FocusScope(
 ///             canRequestFocus: false,
-///             child: Row(
-///               mainAxisAlignment: MainAxisAlignment.center,
-///               children: <Widget>[
-///                 for (final String key in <String>['A', 'B', 'C'])
-///                   ElevatedButton(
-///                     child: Text(key),
-///                     onPressed: () => _handleKeyPress(key),
-///                   ),
-///               ],
+///             child: TextFieldTapRegion(
+///               child: Row(
+///                 mainAxisAlignment: MainAxisAlignment.center,
+///                 children: <Widget>[
+///                   for (final String key in <String>['A', 'B', 'C'])
+///                     ElevatedButton(
+///                       child: Text(key),
+///                       onPressed: () => _handleKeyPress(key),
+///                     ),
+///                 ],
+///               ),
 ///             ),
 ///           ),
 ///         );
