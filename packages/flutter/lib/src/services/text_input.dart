@@ -1582,13 +1582,15 @@ class TextInput {
   static final TextInput _instance = TextInput._();
 
   static void _addInputControl(TextInputControl control) {
-    if (control != _PlatformTextInputControl.instance)
+    if (control != _PlatformTextInputControl.instance) {
       _instance._inputControls.add(control);
+    }
   }
 
   static void _removeInputControl(TextInputControl control) {
-    if (control != _PlatformTextInputControl.instance)
+    if (control != _PlatformTextInputControl.instance) {
       _instance._inputControls.remove(control);
+    }
   }
 
   /// Sets the current text input control.
@@ -1607,12 +1609,15 @@ class TextInput {
   ///    platform text input control.
   static void setInputControl(TextInputControl? newControl) {
     final TextInputControl? oldControl = _instance._currentControl;
-    if (newControl == oldControl)
+    if (newControl == oldControl) {
       return;
-    if (newControl != null)
+    }
+    if (newControl != null) {
       _addInputControl(newControl);
-    if (oldControl != null)
+    }
+    if (oldControl != null) {
       _removeInputControl(oldControl);
+    }
     _instance._currentControl = newControl;
     final TextInputClient? client = _instance._currentConnection?._client;
     client?.didChangeInputControl(oldControl, newControl);
@@ -1907,58 +1912,68 @@ class TextInput {
   }
 
   void _setClient(TextInputClient client, TextInputConfiguration configuration) {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.attach(client, configuration);
+    }
   }
 
   void _clearClient() {
     final TextInputClient client = _currentConnection!._client;
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.detach(client);
+    }
     _currentConnection = null;
     _scheduleHide();
   }
 
   void _updateConfig(TextInputConfiguration configuration) {
     assert(configuration != null);
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.updateConfig(configuration);
+    }
   }
 
   void _setEditingState(TextEditingValue value) {
     assert(value != null);
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.setEditingState(value);
+    }
   }
 
   void _show() {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.show();
+    }
   }
 
   void _hide() {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.hide();
+    }
   }
 
   void _setEditableSizeAndTransform(Size editableBoxSize, Matrix4 transform) {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.setEditableSizeAndTransform(editableBoxSize, transform);
+    }
   }
 
   void _setComposingTextRect(Rect rect) {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.setComposingRect(rect);
+    }
   }
 
   void _setCaretRect(Rect rect) {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.setCaretRect(rect);
+    }
   }
 
   void _setSelectionRects(List<SelectionRect> selectionRects) {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.setSelectionRects(selectionRects);
+    }
   }
 
   void _setStyle({
@@ -1980,17 +1995,20 @@ class TextInput {
   }
 
   void _requestAutofill() {
-    for (final TextInputControl control in _inputControls)
+    for (final TextInputControl control in _inputControls) {
       control.requestAutofill();
+    }
   }
 
   void _updateEditingValue(TextEditingValue value, {TextInputControl? exclude}) {
-    if (_currentConnection == null)
+    if (_currentConnection == null) {
       return;
+    }
 
     for (final TextInputControl control in _instance._inputControls) {
-      if (control != exclude)
+      if (control != exclude) {
         control.setEditingState(value);
+      }
     }
     _instance._currentConnection!._client.updateEditingValue(value);
   }
@@ -2053,8 +2071,9 @@ class TextInput {
   ///   topmost [AutofillGroup] is getting disposed.
   static void finishAutofillContext({ bool shouldSave = true }) {
     assert(shouldSave != null);
-    for (final TextInputControl control in TextInput._instance._inputControls)
+    for (final TextInputControl control in TextInput._instance._inputControls) {
       control.finishAutofillContext(shouldSave: shouldSave);
+    }
   }
 
   /// Registers a [ScribbleClient] with [elementIdentifier] that can be focused
@@ -2353,8 +2372,9 @@ class _PlatformTextInputControl extends TextInputControl {
 
   Map<String, dynamic> _configurationToJson(TextInputConfiguration configuration) {
     final Map<String, dynamic> json = configuration.toJson();
-    if (TextInput._instance._currentControl != _PlatformTextInputControl.instance)
+    if (TextInput._instance._currentControl != _PlatformTextInputControl.instance) {
       json['inputType'] = TextInputType.none.toJson();
+    }
     return json;
   }
 
