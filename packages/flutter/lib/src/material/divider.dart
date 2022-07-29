@@ -12,7 +12,7 @@ import 'theme.dart';
 
 /// A thin horizontal line, with padding on either side.
 ///
-/// In the material design language, this represents a divider. Dividers can be
+/// In the Material Design language, this represents a divider. Dividers can be
 /// used in lists, [Drawer]s, and elsewhere to separate content.
 ///
 /// To create a divider between [ListTile] items, consider using
@@ -23,8 +23,7 @@ import 'theme.dart';
 /// The box's total height is controlled by [height]. The appropriate
 /// padding is automatically computed from the height.
 ///
-/// {@tool dartpad --template=stateless_widget_scaffold}
-///
+/// {@tool dartpad}
 /// This sample shows how to display a Divider between an orange and blue box
 /// inside a column. The Divider is 20 logical pixels in height and contains a
 /// vertically centered black line that is 5 logical pixels thick. The black
@@ -32,64 +31,22 @@ import 'theme.dart';
 ///
 /// ![](https://flutter.github.io/assets-for-api-docs/assets/material/divider.png)
 ///
-/// ```dart
-/// Widget build(BuildContext context) {
-///   return Center(
-///     child: Column(
-///       children: <Widget>[
-///         Expanded(
-///           child: Container(
-///             color: Colors.amber,
-///             child: const Center(
-///               child: Text('Above'),
-///             ),
-///           ),
-///         ),
-///         const Divider(
-///           height: 20,
-///           thickness: 5,
-///           indent: 20,
-///           endIndent: 20,
-///         ),
-///         // Subheader example from Material spec.
-///         // https://material.io/components/dividers#types
-///         Container(
-///           padding: const EdgeInsets.only(left: 20),
-///           child: Align(
-///             alignment: AlignmentDirectional.centerStart,
-///             child: Text(
-///               'Subheader',
-///               style: Theme.of(context).textTheme.caption,
-///               textAlign: TextAlign.start,
-///             ),
-///           ),
-///         ),
-///         Expanded(
-///           child: Container(
-///             color: Theme.of(context).colorScheme.primary,
-///             child: const Center(
-///               child: Text('Below'),
-///             ),
-///           ),
-///         ),
-///       ],
-///     ),
-///   );
-/// }
-/// ```
+/// ** See code in examples/api/lib/material/divider/divider.0.dart **
 /// {@end-tool}
+///
 /// See also:
 ///
 ///  * [PopupMenuDivider], which is the equivalent but for popup menus.
 ///  * [ListTile.divideTiles], another approach to dividing widgets in a list.
+///  * [VerticalDivider], which is the vertical analog of this widget.
 ///  * <https://material.io/design/components/dividers.html>
 class Divider extends StatelessWidget {
-  /// Creates a material design divider.
+  /// Creates a Material Design divider.
   ///
   /// The [height], [thickness], [indent], and [endIndent] must be null or
   /// non-negative.
   const Divider({
-    Key? key,
+    super.key,
     this.height,
     this.thickness,
     this.indent,
@@ -98,8 +55,7 @@ class Divider extends StatelessWidget {
   }) : assert(height == null || height >= 0.0),
        assert(thickness == null || thickness >= 0.0),
        assert(indent == null || indent >= 0.0),
-       assert(endIndent == null || endIndent >= 0.0),
-       super(key: key);
+       assert(endIndent == null || endIndent >= 0.0);
 
 
   /// The divider's height extent.
@@ -223,66 +179,34 @@ class Divider extends StatelessWidget {
 
 /// A thin vertical line, with padding on either side.
 ///
-/// In the material design language, this represents a divider. Vertical
+/// In the Material Design language, this represents a divider. Vertical
 /// dividers can be used in horizontally scrolling lists, such as a
 /// [ListView] with [ListView.scrollDirection] set to [Axis.horizontal].
 ///
 /// The box's total width is controlled by [width]. The appropriate
 /// padding is automatically computed from the width.
 ///
-/// {@tool dartpad --template=stateless_widget_scaffold}
-///
-/// This sample shows how to display a [VerticalDivider] between an purple and orange box
+/// {@tool dartpad}
+/// This sample shows how to display a [VerticalDivider] between a purple and orange box
 /// inside a [Row]. The [VerticalDivider] is 20 logical pixels in width and contains a
 /// horizontally centered black line that is 1 logical pixels thick. The grey
 /// line is indented by 20 logical pixels.
 ///
-/// ```dart
-/// Widget build(BuildContext context) {
-///   return Container(
-///     padding: const EdgeInsets.all(10),
-///     child: Row(
-///       children: <Widget>[
-///         Expanded(
-///           child: Container(
-///             decoration: BoxDecoration(
-///               borderRadius: BorderRadius.circular(10),
-///               color: Colors.deepPurpleAccent,
-///             ),
-///           ),
-///         ),
-///         const VerticalDivider(
-///           color: Colors.grey,
-///           thickness: 1,
-///           indent: 20,
-///           endIndent: 0,
-///           width: 20,
-///         ),
-///         Expanded(
-///           child: Container(
-///             decoration: BoxDecoration(
-///               borderRadius: BorderRadius.circular(10),
-///               color: Colors.deepOrangeAccent,
-///             ),
-///           ),
-///         ),
-///       ],
-///     ),
-///   );
-/// }
-/// ```
+/// ** See code in examples/api/lib/material/divider/vertical_divider.0.dart **
 /// {@end-tool}
+///
 /// See also:
 ///
 ///  * [ListView.separated], which can be used to generate vertical dividers.
+///  * [Divider], which is the horizontal analog of this widget.
 ///  * <https://material.io/design/components/dividers.html>
 class VerticalDivider extends StatelessWidget {
-  /// Creates a material design vertical divider.
+  /// Creates a Material Design vertical divider.
   ///
   /// The [width], [thickness], [indent], and [endIndent] must be null or
   /// non-negative.
   const VerticalDivider({
-    Key? key,
+    super.key,
     this.width,
     this.thickness,
     this.indent,
@@ -291,8 +215,7 @@ class VerticalDivider extends StatelessWidget {
   }) : assert(width == null || width >= 0.0),
        assert(thickness == null || thickness >= 0.0),
        assert(indent == null || indent >= 0.0),
-       assert(endIndent == null || endIndent >= 0.0),
-       super(key: key);
+       assert(endIndent == null || endIndent >= 0.0);
 
   /// The divider's width.
   ///

@@ -73,8 +73,9 @@ class RenderImage extends RenderBox {
   bool? _flipHorizontally;
 
   void _resolve() {
-    if (_resolvedAlignment != null)
+    if (_resolvedAlignment != null) {
       return;
+    }
     _resolvedAlignment = alignment.resolve(textDirection);
     _flipHorizontally = matchTextDirection && textDirection == TextDirection.rtl;
   }
@@ -101,8 +102,9 @@ class RenderImage extends RenderBox {
     _image?.dispose();
     _image = value;
     markNeedsPaint();
-    if (_width == null || _height == null)
+    if (_width == null || _height == null) {
       markNeedsLayout();
+    }
   }
 
   /// A string used to identify the source of the image.
@@ -115,8 +117,9 @@ class RenderImage extends RenderBox {
   double? get width => _width;
   double? _width;
   set width(double? value) {
-    if (value == _width)
+    if (value == _width) {
       return;
+    }
     _width = value;
     markNeedsLayout();
   }
@@ -128,8 +131,9 @@ class RenderImage extends RenderBox {
   double? get height => _height;
   double? _height;
   set height(double? value) {
-    if (value == _height)
+    if (value == _height) {
       return;
+    }
     _height = value;
     markNeedsLayout();
   }
@@ -141,8 +145,9 @@ class RenderImage extends RenderBox {
   double _scale;
   set scale(double value) {
     assert(value != null);
-    if (value == _scale)
+    if (value == _scale) {
       return;
+    }
     _scale = value;
     markNeedsLayout();
   }
@@ -150,18 +155,20 @@ class RenderImage extends RenderBox {
   ColorFilter? _colorFilter;
 
   void _updateColorFilter() {
-    if (_color == null)
+    if (_color == null) {
       _colorFilter = null;
-    else
+    } else {
       _colorFilter = ColorFilter.mode(_color!, _colorBlendMode ?? BlendMode.srcIn);
+    }
   }
 
   /// If non-null, this color is blended with each image pixel using [colorBlendMode].
   Color? get color => _color;
   Color? _color;
   set color(Color? value) {
-    if (value == _color)
+    if (value == _color) {
       return;
+    }
     _color = value;
     _updateColorFilter();
     markNeedsPaint();
@@ -172,17 +179,21 @@ class RenderImage extends RenderBox {
   Animation<double>? get opacity => _opacity;
   Animation<double>? _opacity;
   set opacity(Animation<double>? value) {
-    if (value == _opacity)
+    if (value == _opacity) {
       return;
+    }
 
-    if (attached)
+    if (attached) {
       _opacity?.removeListener(markNeedsPaint);
+    }
     _opacity = value;
-    if (attached)
+    if (attached) {
       value?.addListener(markNeedsPaint);
+    }
   }
 
-  /// Used to set the filterQuality of the image
+  /// Used to set the filterQuality of the image.
+  ///
   /// Use the [FilterQuality.low] quality setting to scale the image, which corresponds to
   /// bilinear interpolation, rather than the default [FilterQuality.none] which corresponds
   /// to nearest-neighbor.
@@ -190,8 +201,9 @@ class RenderImage extends RenderBox {
   FilterQuality _filterQuality;
   set filterQuality(FilterQuality value) {
     assert(value != null);
-    if (value == _filterQuality)
+    if (value == _filterQuality) {
       return;
+    }
     _filterQuality = value;
     markNeedsPaint();
   }
@@ -208,8 +220,9 @@ class RenderImage extends RenderBox {
   BlendMode? get colorBlendMode => _colorBlendMode;
   BlendMode? _colorBlendMode;
   set colorBlendMode(BlendMode? value) {
-    if (value == _colorBlendMode)
+    if (value == _colorBlendMode) {
       return;
+    }
     _colorBlendMode = value;
     _updateColorFilter();
     markNeedsPaint();
@@ -222,8 +235,9 @@ class RenderImage extends RenderBox {
   BoxFit? get fit => _fit;
   BoxFit? _fit;
   set fit(BoxFit? value) {
-    if (value == _fit)
+    if (value == _fit) {
       return;
+    }
     _fit = value;
     markNeedsPaint();
   }
@@ -236,8 +250,9 @@ class RenderImage extends RenderBox {
   AlignmentGeometry _alignment;
   set alignment(AlignmentGeometry value) {
     assert(value != null);
-    if (value == _alignment)
+    if (value == _alignment) {
       return;
+    }
     _alignment = value;
     _markNeedResolution();
   }
@@ -247,8 +262,9 @@ class RenderImage extends RenderBox {
   ImageRepeat _repeat;
   set repeat(ImageRepeat value) {
     assert(value != null);
-    if (value == _repeat)
+    if (value == _repeat) {
       return;
+    }
     _repeat = value;
     markNeedsPaint();
   }
@@ -263,22 +279,24 @@ class RenderImage extends RenderBox {
   Rect? get centerSlice => _centerSlice;
   Rect? _centerSlice;
   set centerSlice(Rect? value) {
-    if (value == _centerSlice)
+    if (value == _centerSlice) {
       return;
+    }
     _centerSlice = value;
     markNeedsPaint();
   }
 
   /// Whether to invert the colors of the image.
   ///
-  /// inverting the colors of an image applies a new color filter to the paint.
+  /// Inverting the colors of an image applies a new color filter to the paint.
   /// If there is another specified color filter, the invert will be applied
   /// after it. This is primarily used for implementing smart invert on iOS.
   bool get invertColors => _invertColors;
   bool _invertColors;
   set invertColors(bool value) {
-    if (value == _invertColors)
+    if (value == _invertColors) {
       return;
+    }
     _invertColors = value;
     markNeedsPaint();
   }
@@ -301,8 +319,9 @@ class RenderImage extends RenderBox {
   bool _matchTextDirection;
   set matchTextDirection(bool value) {
     assert(value != null);
-    if (value == _matchTextDirection)
+    if (value == _matchTextDirection) {
       return;
+    }
     _matchTextDirection = value;
     _markNeedResolution();
   }
@@ -315,8 +334,9 @@ class RenderImage extends RenderBox {
   TextDirection? get textDirection => _textDirection;
   TextDirection? _textDirection;
   set textDirection(TextDirection? value) {
-    if (_textDirection == value)
+    if (_textDirection == value) {
       return;
+    }
     _textDirection = value;
     _markNeedResolution();
   }
@@ -350,8 +370,9 @@ class RenderImage extends RenderBox {
       height: _height,
     ).enforce(constraints);
 
-    if (_image == null)
+    if (_image == null) {
       return constraints.smallest;
+    }
 
     return constraints.constrainSizeAndAttemptToPreserveAspectRatio(Size(
       _image!.width.toDouble() / _scale,
@@ -362,8 +383,9 @@ class RenderImage extends RenderBox {
   @override
   double computeMinIntrinsicWidth(double height) {
     assert(height >= 0.0);
-    if (_width == null && _height == null)
+    if (_width == null && _height == null) {
       return 0.0;
+    }
     return _sizeForConstraints(BoxConstraints.tightForFinite(height: height)).width;
   }
 
@@ -376,8 +398,9 @@ class RenderImage extends RenderBox {
   @override
   double computeMinIntrinsicHeight(double width) {
     assert(width >= 0.0);
-    if (_width == null && _height == null)
+    if (_width == null && _height == null) {
       return 0.0;
+    }
     return _sizeForConstraints(BoxConstraints.tightForFinite(width: width)).height;
   }
 
@@ -414,8 +437,9 @@ class RenderImage extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (_image == null)
+    if (_image == null) {
       return;
+    }
     _resolve();
     assert(_resolvedAlignment != null);
     assert(_flipHorizontally != null);

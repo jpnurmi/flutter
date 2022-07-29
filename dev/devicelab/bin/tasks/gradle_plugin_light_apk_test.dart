@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:io';
 
 import 'package:flutter_devicelab/framework/apk_utils.dart';
@@ -24,7 +22,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--debug',
-              '--target-platform=android-arm'
+              '--target-platform=android-arm',
             ],
           );
         });
@@ -56,7 +54,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--debug',
-              '--target-platform=android-x86'
+              '--target-platform=android-x86',
             ],
           );
         });
@@ -87,7 +85,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--debug',
-              '--target-platform=android-x64'
+              '--target-platform=android-x64',
             ],
           );
         });
@@ -117,7 +115,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
-              '--target-platform=android-arm'
+              '--target-platform=android-arm',
             ],
           );
         });
@@ -145,7 +143,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
-              '--target-platform=android-arm64'
+              '--target-platform=android-arm64',
             ],
           );
         });
@@ -177,7 +175,7 @@ Future<void> main() async {
             ],
           );
         });
-        final String errorMessage = validateSnapshotDependency(project, 'kernel_blob.bin');
+        final String? errorMessage = validateSnapshotDependency(project, 'kernel_blob.bin');
         if (errorMessage != null) {
           throw TaskResult.failure(errorMessage);
         }
@@ -237,7 +235,6 @@ Future<void> main() async {
       await runProjectTest((FlutterProject project) async {
         section('gradlew assembleLocal (plugin with custom build type)');
         await project.addCustomBuildType('local', initWith: 'debug');
-        await project.addGlobalBuildType('local', initWith: 'debug');
         section('Add plugin');
         project.addPlugin('path_provider');
         await project.getPackages();

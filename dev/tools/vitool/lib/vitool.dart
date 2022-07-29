@@ -8,7 +8,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:vector_math/vector_math_64.dart';
-import 'package:xml/xml.dart' hide parse;
+import 'package:xml/xml.dart';
 
 // String to use for a single indentation.
 const String kIndent = '  ';
@@ -274,7 +274,7 @@ class FrameData {
   }
 
   @override
-  int get hashCode => size.hashCode ^ paths.hashCode;
+  int get hashCode => Object.hash(size, Object.hashAll(paths));
 
   @override
   String toString() {
@@ -328,7 +328,7 @@ class SvgPath {
   }
 
   @override
-  int get hashCode => id.hashCode ^ commands.hashCode ^ opacity.hashCode;
+  int get hashCode => Object.hash(id, Object.hashAll(commands), opacity);
 
   @override
   String toString() {
@@ -377,7 +377,7 @@ class SvgPathCommand {
   }
 
   @override
-  int get hashCode => type.hashCode ^ points.hashCode;
+  int get hashCode => Object.hash(type, Object.hashAll(points));
 
   @override
   String toString() {

@@ -11,7 +11,7 @@ import 'base/logger.dart';
 import 'base/os.dart';
 import 'base/utils.dart';
 import 'convert.dart';
-import 'globals_null_migrated.dart' as globals;
+import 'globals.dart' as globals;
 
 /// Whether icon font subsetting is enabled by default.
 const bool kIconTreeShakerEnabledDefault = true;
@@ -36,12 +36,13 @@ class BuildInfo {
     List<String>? dartExperiments,
     required this.treeShakeIcons,
     this.performanceMeasurementFile,
-    this.packagesPath = '.packages', // TODO(jonahwilliams): make this required and remove the default.
+    this.packagesPath = '.dart_tool/package_config.json', // TODO(zanderso): make this required and remove the default.
     this.nullSafetyMode = NullSafetyMode.sound,
     this.codeSizeDirectory,
     this.androidGradleDaemon = true,
     this.packageConfig = PackageConfig.empty,
     this.initializeFromDill,
+    this.assumeInitializeFromDillUpToDate = false,
   }) : extraFrontEndOptions = extraFrontEndOptions ?? const <String>[],
        extraGenSnapshotOptions = extraGenSnapshotOptions ?? const <String>[],
        fileSystemRoots = fileSystemRoots ?? const <String>[],
@@ -66,10 +67,10 @@ class BuildInfo {
   /// Mode-Flavor (e.g. Release-Paid).
   final String? flavor;
 
-  /// The path to the .packages file to use for compilation.
+  /// The path to the package configuration file to use for compilation.
   ///
   /// This is used by package:package_config to locate the actual package_config.json
-  /// file. If not provided, defaults to `.packages`.
+  /// file. If not provided, defaults to `.dart_tool/package_config.json`.
   final String packagesPath;
 
   final List<String> fileSystemRoots;
@@ -89,12 +90,14 @@ class BuildInfo {
   /// It is used to determine whether one build is more recent than another, with higher numbers indicating more recent build.
   /// On Android it is used as versionCode.
   /// On Xcode builds it is used as CFBundleVersion.
+  /// On Windows it is used as the build suffix for the product and file versions.
   final String? buildNumber;
 
   /// A "x.y.z" string used as the version number shown to users.
   /// For each new version of your app, you will provide a version number to differentiate it from previous versions.
   /// On Android it is used as versionName.
   /// On Xcode builds it is used as CFBundleShortVersionString.
+  /// On Windows it is used as the major, minor, and patch parts of the product and file versions.
   final String? buildName;
 
   /// An optional directory path to save debugging information from dwarf stack
@@ -159,7 +162,11 @@ class BuildInfo {
   /// If this is null, it will be initialized from the default cached location.
   final String? initializeFromDill;
 
-  static const BuildInfo debug = BuildInfo(BuildMode.debug, null, treeShakeIcons: false);
+  /// If set, assumes that the file passed in [initializeFromDill] is up to date
+  /// and skips the check and potential invalidation of files.
+  final bool assumeInitializeFromDillUpToDate;
+
+  static const BuildInfo debug = BuildInfo(BuildMode.debug, null, trackWidgetCreation: true, treeShakeIcons: false);
   static const BuildInfo profile = BuildInfo(BuildMode.profile, null, treeShakeIcons: kIconTreeShakerEnabledDefault);
   static const BuildInfo jitRelease = BuildInfo(BuildMode.jitRelease, null, treeShakeIcons: kIconTreeShakerEnabledDefault);
   static const BuildInfo release = BuildInfo(BuildMode.release, null, treeShakeIcons: kIconTreeShakerEnabledDefault);
@@ -193,9 +200,13 @@ class BuildInfo {
   String get modeName => getModeName(mode);
   String get friendlyModeName => getFriendlyModeName(mode);
 
-  /// the flavor name in the output files is lower-cased (see flutter.gradle),
+  /// the flavor name in the output apk files is lower-cased (see flutter.gradle),
   /// so the lower cased flavor name is used to compute the output file name
   String? get lowerCasedFlavor => flavor?.toLowerCase();
+
+  /// the flavor name in the output bundle files has the first character lower-cased,
+  /// so the uncapitalized flavor name is used to compute the output file name
+  String? get uncapitalizedFlavor => _uncapitalize(flavor);
 
   /// Convert to a structured string encoded structure appropriate for usage
   /// in build system [Environment.defines].
@@ -228,6 +239,10 @@ class BuildInfo {
         kFileSystemRoots: fileSystemRoots.join(','),
       if (fileSystemScheme != null)
         kFileSystemScheme: fileSystemScheme!,
+      if (buildName != null)
+        kBuildName: buildName!,
+      if (buildNumber != null)
+        kBuildNumber: buildNumber!,
     };
   }
 
@@ -304,6 +319,7 @@ class AndroidBuildInfo {
     ],
     this.splitPerAbi = false,
     this.fastStart = false,
+    this.multidexEnabled = false,
   });
 
   // The build info containing the mode and flavor.
@@ -321,6 +337,9 @@ class AndroidBuildInfo {
 
   /// Whether to bootstrap an empty application.
   final bool fastStart;
+
+  /// Whether to enable multidex support for apps with more than 64k methods.
+  final bool multidexEnabled;
 }
 
 /// A summary of the compilation strategy used for Dart.
@@ -510,7 +529,6 @@ enum TargetPlatform {
   linux_x64,
   linux_arm64,
   windows_x64,
-  windows_uwp_x64,
   fuchsia_arm64,
   fuchsia_x64,
   tester,
@@ -529,12 +547,12 @@ enum TargetPlatform {
 //
 // TODO(cbracken): split TargetPlatform.ios into ios_armv7, ios_arm64.
 enum DarwinArch {
-  armv7,
+  armv7, // Deprecated. Used to display 32-bit unsupported devices.
   arm64,
   x86_64,
 }
 
-// TODO(jonahwilliams): replace all android TargetPlatform usage with AndroidArch.
+// TODO(zanderso): replace all android TargetPlatform usage with AndroidArch.
 enum AndroidArch {
   armeabi_v7a,
   arm64_v8a,
@@ -547,16 +565,40 @@ List<DarwinArch> defaultIOSArchsForEnvironment(
     EnvironmentType environmentType) {
   if (environmentType == EnvironmentType.simulator) {
     return <DarwinArch>[
-      // Apple Silicon ARM simulators not yet supported.
       DarwinArch.x86_64,
+      DarwinArch.arm64,
     ];
   }
   return <DarwinArch>[
-    DarwinArch.armv7,
     DarwinArch.arm64,
   ];
 }
 
+// Returns the Dart SDK's name for the specified target architecture.
+//
+// When building for Darwin platforms, the tool invokes architecture-specific
+// variants of `gen_snapshot`, one for each target architecture. The output
+// instructions are then built into architecture-specific binaries, which are
+// merged into a universal binary using the `lipo` tool.
+String getDartNameForDarwinArch(DarwinArch arch) {
+  switch (arch) {
+    case DarwinArch.armv7:
+      return 'armv7';
+    case DarwinArch.arm64:
+      return 'arm64';
+    case DarwinArch.x86_64:
+      return 'x64';
+  }
+}
+
+// Returns Apple's name for the specified target architecture.
+//
+// When invoking Apple tools such as `xcodebuild` or `lipo`, the tool often
+// passes one or more target architectures as paramters. The names returned by
+// this function reflect Apple's name for the specified architecture.
+//
+// For consistency with developer expectations, Flutter outputs also use these
+// architecture names in its build products for Darwin target platforms.
 String getNameForDarwinArch(DarwinArch arch) {
   switch (arch) {
     case DarwinArch.armv7:
@@ -619,8 +661,6 @@ String getNameForTargetPlatform(TargetPlatform platform, {DarwinArch? darwinArch
       return 'linux-arm64';
     case TargetPlatform.windows_x64:
       return 'windows-x64';
-    case TargetPlatform.windows_uwp_x64:
-      return 'windows-uwp-x64';
     case TargetPlatform.fuchsia_arm64:
       return 'fuchsia-arm64';
     case TargetPlatform.fuchsia_x64:
@@ -634,7 +674,7 @@ String getNameForTargetPlatform(TargetPlatform platform, {DarwinArch? darwinArch
   }
 }
 
-TargetPlatform? getTargetPlatformForName(String platform) {
+TargetPlatform getTargetPlatformForName(String platform) {
   switch (platform) {
     case 'android':
       return TargetPlatform.android;
@@ -664,13 +704,10 @@ TargetPlatform? getTargetPlatformForName(String platform) {
       return TargetPlatform.linux_arm64;
     case 'windows-x64':
       return TargetPlatform.windows_x64;
-    case 'windows-uwp-x64':
-      return TargetPlatform.windows_uwp_x64;
     case 'web-javascript':
       return TargetPlatform.web_javascript;
   }
-  assert(platform != null);
-  return null;
+  throw Exception('Unsupported platform name "$platform"');
 }
 
 AndroidArch getAndroidArchForName(String platform) {
@@ -719,7 +756,18 @@ String fuchsiaArchForTargetPlatform(TargetPlatform targetPlatform) {
       return 'arm64';
     case TargetPlatform.fuchsia_x64:
       return 'x64';
-    default:
+    case TargetPlatform.android:
+    case TargetPlatform.android_arm:
+    case TargetPlatform.android_arm64:
+    case TargetPlatform.android_x64:
+    case TargetPlatform.android_x86:
+    case TargetPlatform.darwin:
+    case TargetPlatform.ios:
+    case TargetPlatform.linux_arm64:
+    case TargetPlatform.linux_x64:
+    case TargetPlatform.tester:
+    case TargetPlatform.web_javascript:
+    case TargetPlatform.windows_x64:
       throw UnsupportedError('Unexpected Fuchsia platform $targetPlatform');
   }
 }
@@ -736,7 +784,7 @@ HostPlatform getCurrentHostPlatform() {
     return HostPlatform.windows_x64;
   }
 
-  globals.printError('Unsupported host platform, defaulting to Linux');
+  globals.printWarning('Unsupported host platform, defaulting to Linux');
 
   return HostPlatform.linux_x64;
 }
@@ -807,11 +855,6 @@ String getWindowsBuildDirectory() {
   return globals.fs.path.join(getBuildDirectory(), 'windows');
 }
 
-/// Returns the Windows UWP build output directory.
-String getWindowsBuildUwpDirectory() {
-  return globals.fs.path.join(getBuildDirectory(), 'winuwp');
-}
-
 /// Returns the Fuchsia build output directory.
 String getFuchsiaBuildDirectory() {
   return globals.fs.path.join(getBuildDirectory(), 'fuchsia');
@@ -869,14 +912,12 @@ const String kFileSystemRoots = 'FileSystemRoots';
 ///
 /// This is expected to be a space-delimited list of architectures. If not
 /// provided, defaults to arm64.
-///
-/// The other supported value is armv7, the 32-bit iOS architecture.
 const String kIosArchs = 'IosArchs';
 
 /// The define to control what macOS architectures are built for.
 ///
 /// This is expected to be a space-delimited list of architectures. If not
-/// provided, defautls to x86_64.
+/// provided, defaults to x86_64.
 ///
 /// Supported values are x86_64 and arm64.
 const String kDarwinArchs = 'DarwinArchs';
@@ -902,6 +943,12 @@ const String kIconTreeShakerFlag = 'TreeShakeIcons';
 
 /// The input key for an SkSL bundle path.
 const String kBundleSkSLPath = 'BundleSkSLPath';
+
+/// The define to pass build name
+const String kBuildName = 'BuildName';
+
+/// The define to pass build number
+const String kBuildNumber = 'BuildNumber';
 
 final Converter<String, String> _defineEncoder = utf8.encoder.fuse(base64.encoder);
 final Converter<String, String> _defineDecoder = base64.decoder.fuse(utf8.decoder);
@@ -964,7 +1011,16 @@ String getNameForTargetPlatformArch(TargetPlatform platform) {
       return 'x64';
     case TargetPlatform.linux_arm64:
       return 'arm64';
-    default:
+    case TargetPlatform.android:
+    case TargetPlatform.android_arm:
+    case TargetPlatform.android_arm64:
+    case TargetPlatform.android_x64:
+    case TargetPlatform.android_x86:
+    case TargetPlatform.fuchsia_arm64:
+    case TargetPlatform.fuchsia_x64:
+    case TargetPlatform.ios:
+    case TargetPlatform.tester:
+    case TargetPlatform.web_javascript:
       throw UnsupportedError('Unexpected target platform $platform');
   }
 }
@@ -982,4 +1038,11 @@ String getNameForHostPlatformArch(HostPlatform platform) {
     case HostPlatform.windows_x64:
       return 'x64';
   }
+}
+
+String? _uncapitalize(String? s) {
+  if (s == null || s.isEmpty) {
+    return s;
+  }
+  return s.substring(0, 1).toLowerCase() + s.substring(1);
 }

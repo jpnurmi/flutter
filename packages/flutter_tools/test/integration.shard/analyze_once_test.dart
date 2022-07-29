@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/io.dart';
 import '../src/common.dart';
@@ -12,12 +10,13 @@ import 'test_utils.dart';
 final String analyzerSeparator = platform.isWindows ? '-' : '•';
 
 void main() {
-  Directory tempDir;
-  String projectPath;
-  File libMain;
+  late Directory tempDir;
+  late String projectPath;
+  late File libMain;
+  late File errorFile;
 
   Future<void> runCommand({
-    List<String> arguments,
+    List<String> arguments = const <String>[],
     List<String> statusTextContains = const <String>[],
     List<String> errorTextContains = const <String>[],
     String exitMessageContains = '',
@@ -28,15 +27,16 @@ void main() {
       '--no-color',
       ...arguments,
     ], workingDirectory: projectPath);
-    print(result.stdout);
-    print(result.stderr);
+    printOnFailure('Output of flutter ${arguments.join(" ")}');
+    printOnFailure(result.stdout.toString());
+    printOnFailure(result.stderr.toString());
     expect(result.exitCode, exitCode, reason: 'Expected to exit with non-zero exit code.');
     assertContains(result.stdout.toString(), statusTextContains);
     assertContains(result.stdout.toString(), errorTextContains);
     expect(result.stderr, contains(exitMessageContains));
   }
 
-  void _createDotPackages(String projectPath, [bool nullSafe = false]) {
+  void createDotPackages(String projectPath, [bool nullSafe = false]) {
     final StringBuffer flutterRootUri = StringBuffer('file://');
     final String canonicalizedFlutterRootPath = fileSystem.path.canonicalize(getFlutterRoot());
     if (platform.isWindows) {
@@ -54,13 +54,13 @@ void main() {
       "name": "flutter",
       "rootUri": "$flutterRootUri/packages/flutter",
       "packageUri": "lib/",
-      "languageVersion": "2.10"
+      "languageVersion": "2.12"
     },
     {
       "name": "sky_engine",
       "rootUri": "$flutterRootUri/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
-      "languageVersion": "2.10"
+      "languageVersion": "2.12"
     },
     {
       "name": "flutter_project",
@@ -80,13 +80,17 @@ void main() {
   setUp(() {
     tempDir = fileSystem.systemTempDirectory.createTempSync('flutter_analyze_once_test_1.').absolute;
     projectPath = fileSystem.path.join(tempDir.path, 'flutter_project');
+    final String projectWithErrors = fileSystem.path.join(tempDir.path, 'flutter_project_errors');
     fileSystem.file(fileSystem.path.join(projectPath, 'pubspec.yaml'))
         ..createSync(recursive: true)
         ..writeAsStringSync(pubspecYamlSrc);
-    _createDotPackages(projectPath);
+    createDotPackages(projectPath);
     libMain = fileSystem.file(fileSystem.path.join(projectPath, 'lib', 'main.dart'))
         ..createSync(recursive: true)
         ..writeAsStringSync(mainDartSrc);
+    errorFile = fileSystem.file(fileSystem.path.join(projectWithErrors, 'other', 'error.dart'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(r"""import 'package:flutter/material.dart""");
   });
 
   tearDown(() {
@@ -101,12 +105,63 @@ void main() {
     );
   });
 
-  // testWithoutContext a specific file outside the current directory
-  testWithoutContext('passing one file throws', () async {
+  testWithoutContext('passing one file works', () async {
     await runCommand(
       arguments: <String>['analyze', '--no-pub', libMain.path],
-      exitMessageContains: 'is not a directory',
-      exitCode: 1,
+      statusTextContains: <String>['No issues found!']
+    );
+  });
+
+  testWithoutContext('passing one file with errors are detected', () async {
+    await runCommand(
+        arguments: <String>['analyze', '--no-pub', errorFile.path],
+        statusTextContains: <String>[
+          'Analyzing error.dart',
+          "error $analyzerSeparator Target of URI doesn't exist",
+          "error $analyzerSeparator Expected to find ';'",
+          'error $analyzerSeparator Unterminated string literal',
+        ],
+        exitMessageContains: '3 issues found',
+        exitCode: 1
+    );
+  });
+
+  testWithoutContext('passing more than one file with errors', () async {
+    await runCommand(
+        arguments: <String>['analyze', '--no-pub', libMain.path, errorFile.path],
+        statusTextContains: <String>[
+          'Analyzing 2 items',
+          "error $analyzerSeparator Target of URI doesn't exist",
+          "error $analyzerSeparator Expected to find ';'",
+          'error $analyzerSeparator Unterminated string literal',
+        ],
+        exitMessageContains: '3 issues found',
+        exitCode: 1
+    );
+  });
+
+  testWithoutContext('passing more than one file success', () async {
+    final File secondFile = fileSystem.file(fileSystem.path.join(projectPath, 'lib', 'second.dart'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('');
+    await runCommand(
+        arguments: <String>['analyze', '--no-pub', libMain.path, secondFile.path],
+        statusTextContains: <String>['No issues found!']
+    );
+  });
+
+  testWithoutContext('mixing directory and files success', () async {
+    await runCommand(
+        arguments: <String>['analyze', '--no-pub', libMain.path, projectPath],
+        statusTextContains: <String>['No issues found!']
+    );
+  });
+
+  testWithoutContext('file not found', () async {
+    await runCommand(
+        arguments: <String>['analyze', '--no-pub', 'not_found.abc'],
+        exitMessageContains: "not_found.abc', however it does not exist on disk",
+        exitCode: 1
     );
   });
 
@@ -137,10 +192,10 @@ void main() {
       arguments: <String>['analyze', '--no-pub'],
       statusTextContains: <String>[
         'Analyzing',
-        'info $analyzerSeparator Avoid empty else statements',
-        'info $analyzerSeparator Avoid empty statements',
-        "info $analyzerSeparator The declaration '_incrementCounter' isn't",
-        "warning $analyzerSeparator The parameter 'onPressed' is required",
+        'avoid_empty_else',
+        'empty_statements',
+        'unused_element',
+        'missing_required_param',
       ],
       exitMessageContains: '4 issues found.',
       exitCode: 1,
@@ -265,7 +320,6 @@ int analyze() {}
         'missing_return',
       ],
       exitMessageContains: '1 issue found.',
-      exitCode: 0,
     );
   });
 
@@ -282,7 +336,6 @@ int analyze() {}
         'missing_return',
       ],
       exitMessageContains: '1 issue found.',
-      exitCode: 0,
     );
   });
 

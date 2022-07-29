@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:ui' as ui show window;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stocks/main.dart' as stocks;
@@ -36,8 +34,6 @@ Element? findElementOfExactWidgetTypeGoingUp(Element node, Type targetType) {
   return result;
 }
 
-final RegExp materialIconAssetNameColorExtractor = RegExp(r'[^/]+/ic_.+_(white|black)_[0-9]+dp\.png');
-
 void checkIconColor(WidgetTester tester, String label, Color color) {
   final Element listTile = findElementOfExactWidgetTypeGoingUp(tester.element(find.text(label)), ListTile)!;
   final Element asset = findElementOfExactWidgetTypeGoingDown(listTile, RichText)!;
@@ -61,8 +57,8 @@ void main() {
     expect(find.text('Account Balance'), findsNothing);
 
     // drag the drawer out
-    final Offset left = Offset(0.0, (ui.window.physicalSize / ui.window.devicePixelRatio).height / 2.0);
-    final Offset right = Offset((ui.window.physicalSize / ui.window.devicePixelRatio).width, left.dy);
+    final Offset left = Offset(0.0, (WidgetsBinding.instance.window.physicalSize / WidgetsBinding.instance.window.devicePixelRatio).height / 2.0);
+    final Offset right = Offset((WidgetsBinding.instance.window.physicalSize / WidgetsBinding.instance.window.devicePixelRatio).width, left.dy);
     final TestGesture gesture = await tester.startGesture(left);
     await tester.pump();
     await gesture.moveTo(right);

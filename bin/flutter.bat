@@ -11,6 +11,11 @@ REM work across all platforms!
 REM
 REM --------------------------------------------------------------------------
 
+SETLOCAL
+
+REM To debug the tool, you can uncomment the following line to enable debug mode:
+REM SET FLUTTER_TOOL_ARGS="--enable-asserts %FLUTTER_TOOL_ARGS%"
+
 FOR %%i IN ("%~dp0..") DO SET FLUTTER_ROOT=%%~fi
 
 REM If available, add location of bundled mingit to PATH
@@ -38,8 +43,7 @@ SET snapshot_path=%cache_dir%\flutter_tools.snapshot
 SET dart_sdk_path=%cache_dir%\dart-sdk
 SET dart=%dart_sdk_path%\bin\dart.exe
 
-REM To debug the tool, you can uncomment the following lines to enable checked mode and set an observatory port:
-REM SET FLUTTER_TOOL_ARGS="--enable-asserts %FLUTTER_TOOL_ARGS%"
+SET exit_with_errorlevel=%FLUTTER_ROOT%/bin/internal/exit_with_errorlevel.bat
 
 REM Chaining the call to 'dart' and 'exit' with an ampersand ensures that
 REM Windows reads both commands into memory once before executing them. This
@@ -49,4 +53,4 @@ REM
 REM Do not use the CALL command in the next line to execute Dart. CALL causes
 REM Windows to re-read the line from disk after the CALL command has finished
 REM regardless of the ampersand chain.
-"%dart%" --disable-dart-dev --packages="%flutter_tools_dir%\.packages" %FLUTTER_TOOL_ARGS% "%snapshot_path%" %* & exit /B !ERRORLEVEL!
+"%dart%" --disable-dart-dev --packages="%flutter_tools_dir%\.dart_tool\package_config.json" %FLUTTER_TOOL_ARGS% "%snapshot_path%" %* & "%exit_with_errorlevel%"

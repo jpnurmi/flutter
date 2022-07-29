@@ -74,7 +74,7 @@ void main() {
     final PrecacheCommand command = PrecacheCommand(
       cache: cache,
       logger: BufferLogger.test(),
-      featureFlags: TestFeatureFlags(isWebEnabled: false),
+      featureFlags: TestFeatureFlags(),
       platform: FakePlatform(environment: <String, String>{}),
     );
     await createTestCommandRunner(command).run(const <String>['precache', '--web', '--no-android', '--no-ios']);
@@ -103,7 +103,7 @@ void main() {
     final PrecacheCommand command = PrecacheCommand(
       cache: cache,
       logger: BufferLogger.test(),
-      featureFlags: TestFeatureFlags(isMacOSEnabled: false),
+      featureFlags: TestFeatureFlags(),
       platform: FakePlatform(environment: <String, String>{}),
     );
     await createTestCommandRunner(command).run(const <String>['precache', '--macos', '--no-android', '--no-ios']);
@@ -132,7 +132,7 @@ void main() {
     final PrecacheCommand command = PrecacheCommand(
       cache: cache,
       logger: BufferLogger.test(),
-      featureFlags: TestFeatureFlags(isWindowsEnabled: false),
+      featureFlags: TestFeatureFlags(),
       platform: FakePlatform(environment: <String, String>{}),
     );
     await createTestCommandRunner(command).run(const <String>['precache', '--windows', '--no-android', '--no-ios']);
@@ -161,7 +161,7 @@ void main() {
     final PrecacheCommand command = PrecacheCommand(
       cache: cache,
       logger: BufferLogger.test(),
-      featureFlags: TestFeatureFlags(isLinuxEnabled: false),
+      featureFlags: TestFeatureFlags(),
       platform: FakePlatform(environment: <String, String>{}),
     );
     await createTestCommandRunner(command).run(const <String>['precache', '--linux', '--no-android', '--no-ios']);
@@ -175,7 +175,7 @@ void main() {
     final PrecacheCommand command = PrecacheCommand(
       cache: cache,
       logger: BufferLogger.test(),
-      featureFlags: TestFeatureFlags(isWebEnabled: false),
+      featureFlags: TestFeatureFlags(),
       platform: FakePlatform(environment: <String, String>{}),
     );
 
@@ -445,7 +445,7 @@ class FakeCache extends Fake implements Cache {
   Future<bool> isUpToDate() async => isUpToDateValue;
 
   @override
-  Future<void> updateAll(Set<DevelopmentArtifact> requiredArtifacts) async {
+  Future<void> updateAll(Set<DevelopmentArtifact> requiredArtifacts, {bool offline = false}) async {
     artifacts = requiredArtifacts;
   }
 

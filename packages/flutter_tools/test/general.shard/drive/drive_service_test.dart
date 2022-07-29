@@ -16,7 +16,6 @@ import 'package:flutter_tools/src/build_info.dart';
 import 'package:flutter_tools/src/convert.dart';
 import 'package:flutter_tools/src/device.dart';
 import 'package:flutter_tools/src/drive/drive_service.dart';
-import 'package:flutter_tools/src/drive/web_driver_service.dart';
 import 'package:flutter_tools/src/resident_runner.dart';
 import 'package:flutter_tools/src/version.dart';
 import 'package:flutter_tools/src/vmservice.dart';
@@ -38,7 +37,6 @@ final vm_service.Isolate fakeUnpausedIsolate = vm_service.Isolate(
     timestamp: 0
   ),
   breakpoints: <vm_service.Breakpoint>[],
-  exceptionPauseMode: null,
   libraries: <vm_service.LibraryRef>[
     vm_service.LibraryRef(
       id: '1',
@@ -46,36 +44,6 @@ final vm_service.Isolate fakeUnpausedIsolate = vm_service.Isolate(
       name: '',
     ),
   ],
-  livePorts: 0,
-  name: 'test',
-  number: '1',
-  pauseOnExit: false,
-  runnable: true,
-  startTime: 0,
-  isSystemIsolate: false,
-  isolateFlags: <vm_service.IsolateFlag>[],
-);
-
-final vm_service.Isolate fakePausedIsolate = vm_service.Isolate(
-  id: '1',
-  pauseEvent: vm_service.Event(
-    kind: vm_service.EventKind.kPauseException,
-    timestamp: 0
-  ),
-  breakpoints: <vm_service.Breakpoint>[
-    vm_service.Breakpoint(
-      breakpointNumber: 123,
-      id: 'test-breakpoint',
-      location: vm_service.SourceLocation(
-        tokenPos: 0,
-        script: vm_service.ScriptRef(id: 'test-script', uri: 'foo.dart'),
-      ),
-      enabled: true,
-      resolved: true,
-    ),
-  ],
-  exceptionPauseMode: null,
-  libraries: <vm_service.LibraryRef>[],
   livePorts: 0,
   name: 'test',
   number: '1',
@@ -142,7 +110,7 @@ void main() {
         exitCode: 23,
         environment: <String, String>{
           'FOO': 'BAR',
-          'VM_SERVICE_URL': 'http://127.0.0.1:1234/' // dds forwarded URI
+          'VM_SERVICE_URL': 'http://127.0.0.1:1234/', // dds forwarded URI
         },
       ),
     ]);
@@ -167,7 +135,7 @@ void main() {
         exitCode: 23,
         environment: <String, String>{
           'FOO': 'BAR',
-          'VM_SERVICE_URL': 'http://127.0.0.1:1234/' // dds forwarded URI
+          'VM_SERVICE_URL': 'http://127.0.0.1:1234/', // dds forwarded URI
         },
       ),
     ]);
@@ -197,7 +165,7 @@ void main() {
         exitCode: 23,
         environment: <String, String>{
           'FOO': 'BAR',
-          'VM_SERVICE_URL': 'http://127.0.0.1:1234/' // dds forwarded URI
+          'VM_SERVICE_URL': 'http://127.0.0.1:1234/', // dds forwarded URI
         },
       ),
     ]);
@@ -230,7 +198,7 @@ void main() {
         exitCode: 23,
         environment: <String, String>{
           'FOO': 'BAR',
-          'VM_SERVICE_URL': 'http://127.0.0.1:1234/' // dds forwarded URI
+          'VM_SERVICE_URL': 'http://127.0.0.1:1234/', // dds forwarded URI
         },
       ),
     ]);
@@ -260,7 +228,7 @@ void main() {
         command: <String>['dart', 'foo.test', '-rexpanded'],
         exitCode: 11,
         environment: <String, String>{
-          'VM_SERVICE_URL': 'http://127.0.0.1:63426/1UasC_ihpXY=/'
+          'VM_SERVICE_URL': 'http://127.0.0.1:63426/1UasC_ihpXY=/',
         },
       ),
     ]);
@@ -312,13 +280,13 @@ void main() {
       const FakeVmServiceRequest(
         method: '_flutter.getSkSLs',
         args: <String, Object>{
-          'viewId': 'a'
+          'viewId': 'a',
         },
         jsonResponse: <String, Object>{
           'SkSLs': <String, Object>{
             'A': 'B',
-          }
-        }
+          },
+        },
       ),
     ]);
     final FakeProcessManager processManager = FakeProcessManager.empty();
@@ -336,12 +304,10 @@ void main() {
       'platform': 'android',
       'name': 'test',
       'engineRevision': 'abcdefghijklmnopqrstuvwxyz',
-      'data': <String, Object>{'A': 'B'}
+      'data': <String, Object>{'A': 'B'},
     });
   }, overrides: <Type, Generator>{
-    FlutterVersion: () => FakeFlutterVersion(
-      engineRevision: 'abcdefghijklmnopqrstuvwxyz',
-    )
+    FlutterVersion: () => FakeFlutterVersion(),
   });
 
   testWithoutContext('Can connect to existing application and stop it during cleanup', () async {
@@ -352,8 +318,8 @@ void main() {
         method: 'ext.flutter.exit',
         args: <String, Object>{
           'isolateId': '1',
-        }
-      )
+        },
+      ),
     ]);
     final FakeProcessManager processManager = FakeProcessManager.empty();
     final DriverService driverService = setUpDriverService(processManager: processManager, vmService: fakeVmServiceHost.vmService);
@@ -376,8 +342,8 @@ void main() {
         method: 'ext.flutter.exit',
         args: <String, Object>{
           'isolateId': '1',
-        }
-      )
+        },
+      ),
     ]);
     final FakeProcessManager processManager = FakeProcessManager.empty();
     final DriverService driverService = setUpDriverService(processManager: processManager, vmService: fakeVmServiceHost.vmService);
@@ -400,8 +366,8 @@ void main() {
         method: 'ext.flutter.exit',
         args: <String, Object>{
           'isolateId': '1',
-        }
-      )
+        },
+      ),
     ]);
     final FakeProcessManager processManager = FakeProcessManager.empty();
     final DriverService driverService = setUpDriverService(processManager: processManager, vmService: fakeVmServiceHost.vmService);
@@ -424,8 +390,8 @@ void main() {
         method: 'ext.flutter.exit',
         args: <String, Object>{
           'isolateId': '1',
-        }
-      )
+        },
+      ),
     ]);
     final FakeProcessManager processManager = FakeProcessManager.empty();
     final DriverService driverService = setUpDriverService(processManager: processManager, vmService: fakeVmServiceHost.vmService);
@@ -455,25 +421,6 @@ void main() {
       false,
     );
     await driverService.stop();
-  });
-
-  testWithoutContext('WebDriver error message includes link to documentation', () async {
-    const String link = 'https://flutter.dev/docs/testing/integration-tests#running-in-a-browser';
-    final DriverService driverService = WebDriverService(
-      dartSdkPath: 'dart',
-      processUtils: ProcessUtils(
-        processManager: FakeProcessManager.empty(),
-        logger: BufferLogger.test(),
-      ),
-    );
-
-    expect(() => driverService.startTest(
-      'foo.test',
-      <String>[],
-      <String, String>{},
-      PackageConfig(<Package>[Package('test', Uri.base)]),
-      browserName: 'chrome',
-    ), throwsToolExit(message: RegExp('\nFor more information see: $link\n')));
   });
 }
 
@@ -528,8 +475,11 @@ class FakeApplicationPackageFactory extends Fake implements ApplicationPackageFa
   }) async => applicationPackage;
 }
 
-class FakeApplicationPackage extends Fake implements ApplicationPackage {}
+class FakeApplicationPackage extends Fake implements ApplicationPackage { }
 
+// Unfortunately Device, despite not being immutable, has an `operator ==`.
+// Until we fix that, we have to also ignore related lints here.
+// ignore: avoid_implementing_value_types
 class FakeDevice extends Fake implements Device {
   FakeDevice(this.result, {this.supportsFlutterExit = true});
 
@@ -604,11 +554,12 @@ class FakeDartDevelopmentService extends Fake implements DartDevelopmentService 
 
   @override
   Future<void> startDartDevelopmentService(
-    Uri observatoryUri,
+    Uri observatoryUri, {
+    @required Logger logger,
     int hostPort,
     bool ipv6,
-    bool disableServiceAuthCodes, {
-    @required Logger logger,
+    bool disableServiceAuthCodes,
+    bool cacheStartupProfile = false,
   }) async {
     started = true;
   }

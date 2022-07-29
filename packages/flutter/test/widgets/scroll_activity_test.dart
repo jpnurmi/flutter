@@ -13,7 +13,7 @@ List<Widget> children(int n) {
 }
 
 void main() {
-  testWidgets('Scrolling with list view changes', (WidgetTester tester) async {
+  testWidgets('Scrolling with list view changes, leaving the overscroll', (WidgetTester tester) async {
     final ScrollController controller = ScrollController();
     await tester.pumpWidget(MaterialApp(home: ListView(controller: controller, children: children(30))));
     final double thirty = controller.position.maxScrollExtent;
@@ -22,8 +22,22 @@ void main() {
     controller.jumpTo(thirty + 100.0); // past the end
     await tester.pump();
     await tester.pumpWidget(MaterialApp(home: ListView(controller: controller, children: children(31))));
-    expect(controller.position.pixels, thirty + 200.0); // same distance past the end
-    expect(await tester.pumpAndSettle(), 7); // now it goes ballistic...
+    expect(controller.position.pixels, thirty + 100.0); // has the same position, but no longer overscrolled
+    expect(await tester.pumpAndSettle(), 1); // doesn't have ballistic animation...
+    expect(controller.position.pixels, thirty + 100.0); // and ends up at the end
+  });
+
+  testWidgets('Scrolling with list view changes, remaining overscrolled', (WidgetTester tester) async {
+    final ScrollController controller = ScrollController();
+    await tester.pumpWidget(MaterialApp(home: ListView(controller: controller, children: children(30))));
+    final double thirty = controller.position.maxScrollExtent;
+    controller.jumpTo(thirty);
+    await tester.pump();
+    controller.jumpTo(thirty + 200.0); // past the end
+    await tester.pump();
+    await tester.pumpWidget(MaterialApp(home: ListView(controller: controller, children: children(31))));
+    expect(controller.position.pixels, thirty + 200.0); // has the same position, still overscrolled
+    expect(await tester.pumpAndSettle(), 8); // now it goes ballistic...
     expect(controller.position.pixels, thirty + 100.0); // and ends up at the end
   });
 
@@ -116,7 +130,7 @@ void main() {
 }
 
 class PageView62209 extends StatefulWidget {
-  const PageView62209({Key? key}) : super(key: key);
+  const PageView62209({super.key});
 
   @override
   State<PageView62209> createState() => _PageView62209State();
@@ -165,7 +179,7 @@ class _PageView62209State extends State<PageView62209> {
 }
 
 class Carousel62209Page extends StatelessWidget {
-  const Carousel62209Page({required this.number, Key? key}) : super(key: key);
+  const Carousel62209Page({required this.number, super.key});
 
   final int number;
 
@@ -176,7 +190,7 @@ class Carousel62209Page extends StatelessWidget {
 }
 
 class Carousel62209 extends StatefulWidget {
-  const Carousel62209({Key? key, required this.pages}) : super(key: key);
+  const Carousel62209({super.key, required this.pages});
 
   final List<Carousel62209Page> pages;
 
@@ -197,7 +211,7 @@ class _Carousel62209State extends State<Carousel62209> {
   void initState() {
     super.initState();
     _pages = widget.pages.toList();
-    _pageController = PageController(initialPage: 0, keepPage: false);
+    _pageController = PageController(keepPage: false);
   }
 
   @override
@@ -214,13 +228,13 @@ class _Carousel62209State extends State<Carousel62209> {
         _pages = widget.pages.toList();
       } else {
         _jumpingToPage = true;
-        SchedulerBinding.instance!.addPostFrameCallback((_) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
               _pages = widget.pages.toList();
               _currentPage = newPage;
               _pageController.jumpToPage(_currentPage);
-              SchedulerBinding.instance!.addPostFrameCallback((_) {
+              SchedulerBinding.instance.addPostFrameCallback((_) {
                 _jumpingToPage = false;
               });
             });

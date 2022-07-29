@@ -37,13 +37,13 @@ void main() {
 
   testWidgets('SnackBarThemeData implements debugFillProperties', (WidgetTester tester) async {
     final DiagnosticPropertiesBuilder builder = DiagnosticPropertiesBuilder();
-    SnackBarThemeData(
-      backgroundColor: const Color(0xFFFFFFFF),
-      actionTextColor: const Color(0xFF0000AA),
-      disabledActionTextColor: const Color(0xFF00AA00),
-      contentTextStyle: const TextStyle(color: Color(0xFF123456)),
+    const SnackBarThemeData(
+      backgroundColor: Color(0xFFFFFFFF),
+      actionTextColor: Color(0xFF0000AA),
+      disabledActionTextColor: Color(0xFF00AA00),
+      contentTextStyle: TextStyle(color: Color(0xFF123456)),
       elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(2.0))),
       behavior: SnackBarBehavior.floating,
     ).debugFillProperties(builder);
 
@@ -272,7 +272,7 @@ void main() {
     expect(snackBarTopCenter.dy > floatingActionButtonBottomCenter.dy, true);
   });
 
-  Widget _buildApp({
+  Widget buildApp({
     required SnackBarBehavior themedBehavior,
     EdgeInsetsGeometry? margin,
     double? width,
@@ -309,7 +309,7 @@ void main() {
   testWidgets('SnackBar theme behavior will assert properly for margin use', (WidgetTester tester) async {
     // Regression test for https://github.com/flutter/flutter/issues/84935
     // SnackBarBehavior.floating set in theme does not assert with margin
-    await tester.pumpWidget(_buildApp(
+    await tester.pumpWidget(buildApp(
       themedBehavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.all(8.0),
     ));
@@ -320,7 +320,7 @@ void main() {
     expect(exception, isNull);
 
     // SnackBarBehavior.fixed set in theme will still assert with margin
-    await tester.pumpWidget(_buildApp(
+    await tester.pumpWidget(buildApp(
       themedBehavior: SnackBarBehavior.fixed,
       margin: const EdgeInsets.all(8.0),
     ));
@@ -337,7 +337,7 @@ void main() {
 
   testWidgets('SnackBar theme behavior will assert properly for width use', (WidgetTester tester) async {
     // SnackBarBehavior.floating set in theme does not assert with width
-    await tester.pumpWidget(_buildApp(
+    await tester.pumpWidget(buildApp(
       themedBehavior: SnackBarBehavior.floating,
       width: 5.0,
     ));
@@ -348,7 +348,7 @@ void main() {
     expect(exception, isNull);
 
     // SnackBarBehavior.fixed set in theme will still assert with width
-    await tester.pumpWidget(_buildApp(
+    await tester.pumpWidget(buildApp(
       themedBehavior: SnackBarBehavior.fixed,
       width: 5.0,
     ));
@@ -365,12 +365,12 @@ void main() {
 }
 
 SnackBarThemeData _snackBarTheme() {
-  return SnackBarThemeData(
+  return const SnackBarThemeData(
     backgroundColor: Colors.orange,
     actionTextColor: Colors.green,
-    contentTextStyle: const TextStyle(color: Colors.blue),
+    contentTextStyle: TextStyle(color: Colors.blue),
     elevation: 12.0,
-    shape: BeveledRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    shape: BeveledRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
   );
 }
 

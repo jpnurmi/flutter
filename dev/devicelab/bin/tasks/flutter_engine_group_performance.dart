@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:io';
 
 import 'package:flutter_devicelab/framework/devices.dart';
@@ -73,7 +71,7 @@ Future<TaskResult> _doTest() async {
     final String apkPath = path.join(multipleFluttersPath, 'android', 'app',
         'build', 'outputs', 'apk', 'release', 'app-release.apk');
 
-    TaskResult result;
+    TaskResult? result;
     await _withApkInstall(apkPath, _bundleName, (AndroidDevice device) async {
       final List<int> totalMemorySamples = <int>[];
       for (int i = 0; i < _numberOfIterations; ++i) {
@@ -82,7 +80,7 @@ Future<TaskResult> _doTest() async {
           'am',
           'start',
           '-n',
-          '$_bundleName/$_bundleName.$_activityName'
+          '$_bundleName/$_bundleName.$_activityName',
         ]);
         await Future<void>.delayed(const Duration(seconds: 10));
         final Map<String, dynamic> memoryStats =
@@ -95,7 +93,7 @@ Future<TaskResult> _doTest() async {
           ListStatistics(totalMemorySamples);
 
       final Map<String, dynamic> results = <String, dynamic>{
-        ...totalMemoryStatistics.asMap('totalMemory')
+        ...totalMemoryStatistics.asMap('totalMemory'),
       };
       result = TaskResult.success(results,
           benchmarkScoreKeys: results.keys.toList());

@@ -42,7 +42,7 @@ void main() {
       isEmpty,
     );
   }, overrides: <Type, Generator>{
-    FeatureFlags: () => TestFeatureFlags(isWebEnabled: false),
+    FeatureFlags: () => TestFeatureFlags(),
     Logger: () => logger,
   });
 
@@ -71,9 +71,9 @@ void main() {
             'fastStart': false,
             'flutterExit': false,
             'hardwareRendering': false,
-            'startPaused': true
-          }
-        }
+            'startPaused': true,
+          },
+        },
       )),
     );
   }, overrides: <Type, Generator>{

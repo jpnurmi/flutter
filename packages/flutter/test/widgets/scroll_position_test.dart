@@ -11,9 +11,9 @@ ScrollController _controller = ScrollController(
 
 class ThePositiveNumbers extends StatelessWidget {
   const ThePositiveNumbers({
-    Key? key,
+    super.key,
     required this.from,
-  }) : super(key: key);
+  });
   final int from;
   @override
   Widget build(BuildContext context) {
@@ -168,7 +168,6 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ListView(
-          scrollDirection: Axis.vertical,
           controller: controller,
           children: items.map<Widget>((int item) {
             return Focus(

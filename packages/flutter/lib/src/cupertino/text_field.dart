@@ -16,7 +16,7 @@ import 'icons.dart';
 import 'text_selection.dart';
 import 'theme.dart';
 
-export 'package:flutter/services.dart' show TextInputType, TextInputAction, TextCapitalization, SmartQuotesType, SmartDashesType;
+export 'package:flutter/services.dart' show SmartDashesType, SmartQuotesType, TextCapitalization, TextInputAction, TextInputType;
 
 const TextStyle _kDefaultPlaceholderStyle = TextStyle(
   fontWeight: FontWeight.w400,
@@ -29,7 +29,6 @@ const BorderSide _kDefaultRoundedBorderSide = BorderSide(
     color: Color(0x33000000),
     darkColor: Color(0x33FFFFFF),
   ),
-  style: BorderStyle.solid,
   width: 0.0,
 );
 const Border _kDefaultRoundedBorder = Border(
@@ -140,35 +139,11 @@ class _CupertinoTextFieldSelectionGestureDetectorBuilder extends TextSelectionGe
 ///
 /// {@macro flutter.widgets.EditableText.onChanged}
 ///
-/// To control the text that is displayed in the text field, use the
-/// [controller]. For example, to set the initial value of the text field, use
-/// a [controller] that already contains some text such as:
+/// {@tool dartpad}
+/// This example shows how to set the initial value of the `CupertinoTextField` using
+/// a [controller] that already contains some text.
 ///
-/// {@tool snippet}
-///
-/// ```dart
-/// class MyPrefilledText extends StatefulWidget {
-///   const MyPrefilledText({Key? key}) : super(key: key);
-///
-///   @override
-///   State<MyPrefilledText> createState() => _MyPrefilledTextState();
-/// }
-///
-/// class _MyPrefilledTextState extends State<MyPrefilledText> {
-///   late TextEditingController _textController;
-///
-///   @override
-///   void initState() {
-///     super.initState();
-///     _textController = TextEditingController(text: 'initial text');
-///   }
-///
-///   @override
-///   Widget build(BuildContext context) {
-///     return CupertinoTextField(controller: _textController);
-///   }
-/// }
-/// ```
+/// ** See code in examples/api/lib/cupertino/text_field/cupertino_text_field.0.dart **
 /// {@end-tool}
 ///
 /// The [controller] can also control the selection and composing region (and to
@@ -177,6 +152,8 @@ class _CupertinoTextFieldSelectionGestureDetectorBuilder extends TextSelectionGe
 /// The text field has an overridable [decoration] that, by default, draws a
 /// rounded rectangle border around the text field. If you set the [decoration]
 /// property to null, the decoration will be removed entirely.
+///
+/// {@macro flutter.material.textfield.wantKeepAlive}
 ///
 /// Remember to call [TextEditingController.dispose] when it is no longer
 /// needed. This will ensure we discard any resources used by the object.
@@ -191,6 +168,7 @@ class _CupertinoTextFieldSelectionGestureDetectorBuilder extends TextSelectionGe
 ///  * [EditableText], which is the raw text editing control at the heart of a
 ///    [TextField].
 ///  * Learn how to use a [TextEditingController] in one of our [cookbook recipes](https://flutter.dev/docs/cookbook/forms/text-field-changes#2-use-a-texteditingcontroller).
+///  * <https://developer.apple.com/design/human-interface-guidelines/ios/controls/text-fields/>
 class CupertinoTextField extends StatefulWidget {
   /// Creates an iOS-style text field.
   ///
@@ -217,9 +195,12 @@ class CupertinoTextField extends StatefulWidget {
   /// must not be null.
   ///
   /// The [autocorrect], [autofocus], [clearButtonMode], [dragStartBehavior],
-  /// [expands], [maxLengthEnforced], [obscureText], [prefixMode], [readOnly],
-  /// [scrollPadding], [suffixMode], [textAlign], [selectionHeightStyle],
-  /// [selectionWidthStyle], and [enableSuggestions] properties must not be null.
+  /// [expands], [obscureText], [prefixMode], [readOnly], [scrollPadding],
+  /// [suffixMode], [textAlign], [selectionHeightStyle], [selectionWidthStyle],
+  /// [enableSuggestions], and [enableIMEPersonalizedLearning] properties must
+  /// not be null.
+  ///
+  /// {@macro flutter.widgets.editableText.accessibility}
   ///
   /// See also:
   ///
@@ -229,7 +210,7 @@ class CupertinoTextField extends StatefulWidget {
   ///  * [maxLength], which discusses the precise meaning of "number of
   ///    characters" and how it may differ from the intuitive meaning.
   const CupertinoTextField({
-    Key? key,
+    super.key,
     this.controller,
     this.focusNode,
     this.decoration = _kDefaultRoundedBorderDecoration,
@@ -251,6 +232,7 @@ class CupertinoTextField extends StatefulWidget {
     this.strutStyle,
     this.textAlign = TextAlign.start,
     this.textAlignVertical,
+    this.textDirection,
     this.readOnly = false,
     ToolbarOptions? toolbarOptions,
     this.showCursor,
@@ -265,12 +247,6 @@ class CupertinoTextField extends StatefulWidget {
     this.minLines,
     this.expands = false,
     this.maxLength,
-    @Deprecated(
-      'Use maxLengthEnforcement parameter which provides more specific '
-      'behavior related to the maxLength limit. '
-      'This feature was deprecated after v1.25.0-5.0.pre.',
-    )
-    this.maxLengthEnforced = true,
     this.maxLengthEnforcement,
     this.onChanged,
     this.onEditingComplete,
@@ -286,13 +262,16 @@ class CupertinoTextField extends StatefulWidget {
     this.keyboardAppearance,
     this.scrollPadding = const EdgeInsets.all(20.0),
     this.dragStartBehavior = DragStartBehavior.start,
-    this.enableInteractiveSelection = true,
+    bool? enableInteractiveSelection,
     this.selectionControls,
     this.onTap,
     this.scrollController,
     this.scrollPhysics,
-    this.autofillHints,
+    this.autofillHints = const <String>[],
+    this.clipBehavior = Clip.hardEdge,
     this.restorationId,
+    this.scribbleEnabled = true,
+    this.enableIMEPersonalizedLearning = true,
   }) : assert(textAlign != null),
        assert(readOnly != null),
        assert(autofocus != null),
@@ -302,11 +281,6 @@ class CupertinoTextField extends StatefulWidget {
        smartDashesType = smartDashesType ?? (obscureText ? SmartDashesType.disabled : SmartDashesType.enabled),
        smartQuotesType = smartQuotesType ?? (obscureText ? SmartQuotesType.disabled : SmartQuotesType.enabled),
        assert(enableSuggestions != null),
-       assert(maxLengthEnforced != null),
-       assert(
-         maxLengthEnforced || maxLengthEnforcement == null,
-         'maxLengthEnforced is deprecated, use only maxLengthEnforcement',
-       ),
        assert(scrollPadding != null),
        assert(dragStartBehavior != null),
        assert(selectionHeightStyle != null),
@@ -334,19 +308,33 @@ class CupertinoTextField extends StatefulWidget {
          !identical(keyboardType, TextInputType.text),
          'Use keyboardType TextInputType.multiline when using TextInputAction.newline on a multiline TextField.',
        ),
+       assert(enableIMEPersonalizedLearning != null),
        keyboardType = keyboardType ?? (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
-       toolbarOptions = toolbarOptions ?? (obscureText ?
-         const ToolbarOptions(
-           selectAll: true,
-           paste: true,
-         ) :
-         const ToolbarOptions(
-           copy: true,
-           cut: true,
-           selectAll: true,
-           paste: true,
-         )),
-       super(key: key);
+       enableInteractiveSelection = enableInteractiveSelection ?? (!readOnly || !obscureText),
+       toolbarOptions = toolbarOptions ??
+           (obscureText
+               ? (readOnly
+                   // No point in even offering "Select All" in a read-only obscured
+                   // field.
+                   ? const ToolbarOptions()
+                   // Writable, but obscured.
+                   : const ToolbarOptions(
+                       selectAll: true,
+                       paste: true,
+                     ))
+               : (readOnly
+                   // Read-only, not obscured.
+                   ? const ToolbarOptions(
+                       selectAll: true,
+                       copy: true,
+                     )
+                   // Writable, not obscured.
+                   : const ToolbarOptions(
+                       copy: true,
+                       cut: true,
+                       selectAll: true,
+                       paste: true,
+                     )));
 
   /// Creates a borderless iOS-style text field.
   ///
@@ -373,9 +361,9 @@ class CupertinoTextField extends StatefulWidget {
   /// must not be null.
   ///
   /// The [autocorrect], [autofocus], [clearButtonMode], [dragStartBehavior],
-  /// [expands], [maxLengthEnforced], [obscureText], [prefixMode], [readOnly],
-  /// [scrollPadding], [suffixMode], [textAlign], [selectionHeightStyle],
-  /// [selectionWidthStyle], and [enableSuggestions] properties must not be null.
+  /// [expands], [obscureText], [prefixMode], [readOnly], [scrollPadding],
+  /// [suffixMode], [textAlign], [selectionHeightStyle], [selectionWidthStyle],
+  /// and [enableSuggestions] properties must not be null.
   ///
   /// See also:
   ///
@@ -385,7 +373,7 @@ class CupertinoTextField extends StatefulWidget {
   ///  * [maxLength], which discusses the precise meaning of "number of
   ///    characters" and how it may differ from the intuitive meaning.
   const CupertinoTextField.borderless({
-    Key? key,
+    super.key,
     this.controller,
     this.focusNode,
     this.decoration,
@@ -404,6 +392,7 @@ class CupertinoTextField extends StatefulWidget {
     this.strutStyle,
     this.textAlign = TextAlign.start,
     this.textAlignVertical,
+    this.textDirection,
     this.readOnly = false,
     ToolbarOptions? toolbarOptions,
     this.showCursor,
@@ -418,12 +407,6 @@ class CupertinoTextField extends StatefulWidget {
     this.minLines,
     this.expands = false,
     this.maxLength,
-    @Deprecated(
-      'Use maxLengthEnforcement parameter which provides more specific '
-      'behavior related to the maxLength limit. '
-      'This feature was deprecated after v1.25.0-5.0.pre.',
-    )
-    this.maxLengthEnforced = true,
     this.maxLengthEnforcement,
     this.onChanged,
     this.onEditingComplete,
@@ -439,13 +422,16 @@ class CupertinoTextField extends StatefulWidget {
     this.keyboardAppearance,
     this.scrollPadding = const EdgeInsets.all(20.0),
     this.dragStartBehavior = DragStartBehavior.start,
-    this.enableInteractiveSelection = true,
+    bool? enableInteractiveSelection,
     this.selectionControls,
     this.onTap,
     this.scrollController,
     this.scrollPhysics,
-    this.autofillHints,
+    this.autofillHints = const <String>[],
+    this.clipBehavior = Clip.hardEdge,
     this.restorationId,
+    this.scribbleEnabled = true,
+    this.enableIMEPersonalizedLearning = true,
   }) : assert(textAlign != null),
        assert(readOnly != null),
        assert(autofocus != null),
@@ -455,11 +441,6 @@ class CupertinoTextField extends StatefulWidget {
        smartDashesType = smartDashesType ?? (obscureText ? SmartDashesType.disabled : SmartDashesType.enabled),
        smartQuotesType = smartQuotesType ?? (obscureText ? SmartQuotesType.disabled : SmartQuotesType.enabled),
        assert(enableSuggestions != null),
-       assert(maxLengthEnforced != null),
-       assert(
-         maxLengthEnforced || maxLengthEnforcement == null,
-         'maxLengthEnforced is deprecated, use only maxLengthEnforcement',
-       ),
        assert(scrollPadding != null),
        assert(dragStartBehavior != null),
        assert(selectionHeightStyle != null),
@@ -487,19 +468,34 @@ class CupertinoTextField extends StatefulWidget {
          !identical(keyboardType, TextInputType.text),
          'Use keyboardType TextInputType.multiline when using TextInputAction.newline on a multiline TextField.',
        ),
+       assert(clipBehavior != null),
+       assert(enableIMEPersonalizedLearning != null),
        keyboardType = keyboardType ?? (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
-       toolbarOptions = toolbarOptions ?? (obscureText ?
-         const ToolbarOptions(
-           selectAll: true,
-           paste: true,
-         ) :
-         const ToolbarOptions(
-           copy: true,
-           cut: true,
-           selectAll: true,
-           paste: true,
-         )),
-       super(key: key);
+       enableInteractiveSelection = enableInteractiveSelection ?? (!readOnly || !obscureText),
+       toolbarOptions = toolbarOptions ??
+           (obscureText
+               ? (readOnly
+                   // No point in even offering "Select All" in a read-only obscured
+                   // field.
+                   ? const ToolbarOptions()
+                   // Writable, but obscured.
+                   : const ToolbarOptions(
+                       selectAll: true,
+                       paste: true,
+                     ))
+               : (readOnly
+                   // Read-only, not obscured.
+                   ? const ToolbarOptions(
+                       selectAll: true,
+                       copy: true,
+                     )
+                   // Writable, not obscured.
+                   : const ToolbarOptions(
+                       copy: true,
+                       cut: true,
+                       selectAll: true,
+                       paste: true,
+                     )));
 
   /// Controls the text being edited.
   ///
@@ -608,6 +604,9 @@ class CupertinoTextField extends StatefulWidget {
   /// {@macro flutter.material.InputDecorator.textAlignVertical}
   final TextAlignVertical? textAlignVertical;
 
+  /// {@macro flutter.widgets.editableText.textDirection}
+  final TextDirection? textDirection;
+
   /// {@macro flutter.widgets.editableText.readOnly}
   final bool readOnly;
 
@@ -668,18 +667,6 @@ class CupertinoTextField extends StatefulWidget {
   /// {@macro flutter.services.lengthLimitingTextInputFormatter.maxLength}
   final int? maxLength;
 
-  /// If [maxLength] is set, [maxLengthEnforced] indicates whether or not to
-  /// enforce the limit.
-  ///
-  /// If true, prevents the field from allowing more than [maxLength]
-  /// characters.
-  @Deprecated(
-    'Use maxLengthEnforcement parameter which provides more specific '
-    'behavior related to the maxLength limit. '
-    'This feature was deprecated after v1.25.0-5.0.pre.',
-  )
-  final bool maxLengthEnforced;
-
   /// Determines how the [maxLength] limit should be enforced.
   ///
   /// If [MaxLengthEnforcement.none] is set, additional input beyond [maxLength]
@@ -726,7 +713,8 @@ class CupertinoTextField extends StatefulWidget {
 
   /// The color to use when painting the cursor.
   ///
-  /// Defaults to the [CupertinoThemeData.primaryColor] of the ambient theme,
+  /// Defaults to the [DefaultSelectionStyle.cursorColor]. If that color is
+  /// null, it uses the [CupertinoThemeData.primaryColor] of the ambient theme,
   /// which itself defaults to [CupertinoColors.activeBlue] in the light theme
   /// and [CupertinoColors.activeOrange] in the dark theme.
   final Color? cursorColor;
@@ -776,8 +764,19 @@ class CupertinoTextField extends StatefulWidget {
   /// {@macro flutter.services.AutofillConfiguration.autofillHints}
   final Iterable<String>? autofillHints;
 
+  /// {@macro flutter.material.Material.clipBehavior}
+  ///
+  /// Defaults to [Clip.hardEdge].
+  final Clip clipBehavior;
+
   /// {@macro flutter.material.textfield.restorationId}
   final String? restorationId;
+
+  /// {@macro flutter.widgets.editableText.scribbleEnabled}
+  final bool scribbleEnabled;
+
+  /// {@macro flutter.services.TextInputConfiguration.enableIMEPersonalizedLearning}
+  final bool enableIMEPersonalizedLearning;
 
   @override
   State<CupertinoTextField> createState() => _CupertinoTextFieldState();
@@ -807,7 +806,6 @@ class CupertinoTextField extends StatefulWidget {
     properties.add(IntProperty('minLines', minLines, defaultValue: null));
     properties.add(DiagnosticsProperty<bool>('expands', expands, defaultValue: false));
     properties.add(IntProperty('maxLength', maxLength, defaultValue: null));
-    properties.add(FlagProperty('maxLengthEnforced', value: maxLengthEnforced, ifTrue: 'max length enforced'));
     properties.add(EnumProperty<MaxLengthEnforcement>('maxLengthEnforcement', maxLengthEnforcement, defaultValue: null));
     properties.add(DoubleProperty('cursorWidth', cursorWidth, defaultValue: 2.0));
     properties.add(DoubleProperty('cursorHeight', cursorHeight, defaultValue: null));
@@ -819,10 +817,14 @@ class CupertinoTextField extends StatefulWidget {
     properties.add(DiagnosticsProperty<ScrollPhysics>('scrollPhysics', scrollPhysics, defaultValue: null));
     properties.add(EnumProperty<TextAlign>('textAlign', textAlign, defaultValue: TextAlign.start));
     properties.add(DiagnosticsProperty<TextAlignVertical>('textAlignVertical', textAlignVertical, defaultValue: null));
+    properties.add(EnumProperty<TextDirection>('textDirection', textDirection, defaultValue: null));
+    properties.add(DiagnosticsProperty<Clip>('clipBehavior', clipBehavior, defaultValue: Clip.hardEdge));
+    properties.add(DiagnosticsProperty<bool>('scribbleEnabled', scribbleEnabled, defaultValue: true));
+    properties.add(DiagnosticsProperty<bool>('enableIMEPersonalizedLearning', enableIMEPersonalizedLearning, defaultValue: true));
   }
 }
 
-class _CupertinoTextFieldState extends State<CupertinoTextField> with RestorationMixin, AutomaticKeepAliveClientMixin<CupertinoTextField> implements TextSelectionGestureDetectorBuilderDelegate {
+class _CupertinoTextFieldState extends State<CupertinoTextField> with RestorationMixin, AutomaticKeepAliveClientMixin<CupertinoTextField> implements TextSelectionGestureDetectorBuilderDelegate, AutofillClient {
   final GlobalKey _clearGlobalKey = GlobalKey();
 
   RestorableTextEditingController? _controller;
@@ -857,6 +859,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
       _createLocalController();
     }
     _effectiveFocusNode.canRequestFocus = widget.enabled ?? true;
+    _effectiveFocusNode.addListener(_handleFocusChanged);
   }
 
   @override
@@ -868,6 +871,11 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
       unregisterFromRestoration(_controller!);
       _controller!.dispose();
       _controller = null;
+    }
+
+    if (widget.focusNode != oldWidget.focusNode) {
+      (oldWidget.focusNode ?? _focusNode)?.removeListener(_handleFocusChanged);
+      (widget.focusNode ?? _focusNode)?.addListener(_handleFocusChanged);
     }
     _effectiveFocusNode.canRequestFocus = widget.enabled ?? true;
   }
@@ -900,6 +908,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
 
   @override
   void dispose() {
+    _effectiveFocusNode.removeListener(_handleFocusChanged);
     _focusNode?.dispose();
     _controller?.dispose();
     super.dispose();
@@ -911,39 +920,83 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
     _editableText.requestKeyboard();
   }
 
+  void _handleFocusChanged() {
+    setState(() {
+      // Rebuild the widget on focus change to show/hide the text selection
+      // highlight.
+    });
+  }
+
   bool _shouldShowSelectionHandles(SelectionChangedCause? cause) {
     // When the text field is activated by something that doesn't trigger the
     // selection overlay, we shouldn't show the handles either.
-    if (!_selectionGestureDetectorBuilder.shouldShowSelectionToolbar)
+    if (!_selectionGestureDetectorBuilder.shouldShowSelectionToolbar) {
       return false;
+    }
 
     // On iOS, we don't show handles when the selection is collapsed.
-    if (_effectiveController.selection.isCollapsed)
+    if (_effectiveController.selection.isCollapsed) {
       return false;
+    }
 
-    if (cause == SelectionChangedCause.keyboard)
+    if (cause == SelectionChangedCause.keyboard) {
       return false;
+    }
 
-    if (_effectiveController.text.isNotEmpty)
+    if (cause == SelectionChangedCause.scribble) {
       return true;
+    }
+
+    if (_effectiveController.text.isNotEmpty) {
+      return true;
+    }
 
     return false;
   }
 
   void _handleSelectionChanged(TextSelection selection, SelectionChangedCause? cause) {
-    if (cause == SelectionChangedCause.longPress) {
-      _editableText.bringIntoView(selection.base);
-    }
     final bool willShowSelectionHandles = _shouldShowSelectionHandles(cause);
     if (willShowSelectionHandles != _showSelectionHandles) {
       setState(() {
         _showSelectionHandles = willShowSelectionHandles;
       });
     }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        if (cause == SelectionChangedCause.longPress
+            || cause == SelectionChangedCause.drag) {
+          _editableText.bringIntoView(selection.extent);
+        }
+        break;
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.android:
+        if (cause == SelectionChangedCause.drag) {
+          _editableText.bringIntoView(selection.extent);
+        }
+        break;
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.android:
+        break;
+      case TargetPlatform.macOS:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        if (cause == SelectionChangedCause.drag) {
+          _editableText.hideToolbar();
+        }
+        break;
+    }
   }
 
   @override
-  bool get wantKeepAlive => _controller?.value.text.isNotEmpty == true;
+  bool get wantKeepAlive => _controller?.value.text.isNotEmpty ?? false;
 
   bool _shouldShowAttachment({
     required OverlayVisibilityMode attachment,
@@ -1054,8 +1107,9 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
                 // Also call onChanged when the clear button is tapped.
                 final bool textChanged = _effectiveController.text.isNotEmpty;
                 _effectiveController.clear();
-                if (widget.onChanged != null && textChanged)
+                if (widget.onChanged != null && textChanged) {
                   widget.onChanged!(_effectiveController.text);
+                }
               } : null,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6.0),
@@ -1070,6 +1124,28 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
       },
     );
   }
+  // AutofillClient implementation start.
+  @override
+  String get autofillId => _editableText.autofillId;
+
+  @override
+  void autofill(TextEditingValue newEditingValue) => _editableText.autofill(newEditingValue);
+
+  @override
+  TextInputConfiguration get textInputConfiguration {
+    final List<String>? autofillHints = widget.autofillHints?.toList(growable: false);
+    final AutofillConfiguration autofillConfiguration = autofillHints != null
+      ? AutofillConfiguration(
+          uniqueIdentifier: autofillId,
+          autofillHints: autofillHints,
+          currentEditingValue: _effectiveController.value,
+          hintText: widget.placeholder,
+        )
+      : AutofillConfiguration.disabled;
+
+    return _editableText.textInputConfiguration.copyWith(autofillConfiguration: autofillConfiguration);
+  }
+  // AutofillClient implementation end.
 
   @override
   Widget build(BuildContext context) {
@@ -1084,15 +1160,14 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
-      case TargetPlatform.windows:
         textSelectionControls ??= cupertinoTextSelectionControls;
         break;
 
       case TargetPlatform.macOS:
+      case TargetPlatform.windows:
         textSelectionControls ??= cupertinoDesktopTextSelectionControls;
         handleDidGainAccessibilityFocus = () {
-          // macOS automatically activated the TextField when it receives
-          // accessibility focus.
+          // Automatically activate the TextField when it receives accessibility focus.
           if (!_effectiveFocusNode.hasFocus && _effectiveFocusNode.canRequestFocus) {
             _effectiveFocusNode.requestFocus();
           }
@@ -1104,7 +1179,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
     final Offset cursorOffset = Offset(_iOSHorizontalCursorOffsetPixels / MediaQuery.of(context).devicePixelRatio, 0);
     final List<TextInputFormatter> formatters = <TextInputFormatter>[
       ...?widget.inputFormatters,
-      if (widget.maxLength != null && widget.maxLengthEnforced)
+      if (widget.maxLength != null)
         LengthLimitingTextInputFormatter(
           widget.maxLength,
           maxLengthEnforcement: _effectiveMaxLengthEnforcement,
@@ -1127,7 +1202,11 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
     final TextStyle placeholderStyle = textStyle.merge(resolvedPlaceholderStyle);
 
     final Brightness keyboardAppearance = widget.keyboardAppearance ?? CupertinoTheme.brightnessOf(context);
-    final Color cursorColor = CupertinoDynamicColor.maybeResolve(widget.cursorColor, context) ?? themeData.primaryColor;
+    final Color cursorColor = CupertinoDynamicColor.maybeResolve(
+      widget.cursorColor ?? DefaultSelectionStyle.of(context).cursorColor,
+      context,
+    ) ?? themeData.primaryColor;
+
     final Color disabledColor = CupertinoDynamicColor.resolve(_kDisabledBackground, context);
 
     final Color? decorationColor = CupertinoDynamicColor.maybeResolve(widget.decoration?.color, context);
@@ -1155,7 +1234,10 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
       color: enabled ? decorationColor : disabledColor,
     );
 
-    final Color selectionColor = CupertinoTheme.of(context).primaryColor.withOpacity(0.2);
+    final Color selectionColor = CupertinoDynamicColor.maybeResolve(
+      DefaultSelectionStyle.of(context).selectionColor,
+      context,
+    ) ?? CupertinoTheme.of(context).primaryColor.withOpacity(0.2);
 
     final Widget paddedEditable = Padding(
       padding: widget.padding,
@@ -1176,6 +1258,7 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
             style: textStyle,
             strutStyle: widget.strutStyle,
             textAlign: widget.textAlign,
+            textDirection: widget.textDirection,
             autofocus: widget.autofocus,
             obscuringCharacter: widget.obscuringCharacter,
             obscureText: widget.obscureText,
@@ -1186,7 +1269,8 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
             maxLines: widget.maxLines,
             minLines: widget.minLines,
             expands: widget.expands,
-            selectionColor: selectionColor,
+            // Only show the selection highlight when the text field is focused.
+            selectionColor: _effectiveFocusNode.hasFocus ? selectionColor : null,
             selectionControls: widget.selectionEnabled
               ? textSelectionControls : null,
             onChanged: widget.onChanged,
@@ -1212,8 +1296,11 @@ class _CupertinoTextFieldState extends State<CupertinoTextField> with Restoratio
             scrollController: widget.scrollController,
             scrollPhysics: widget.scrollPhysics,
             enableInteractiveSelection: widget.enableInteractiveSelection,
-            autofillHints: widget.autofillHints,
+            autofillClient: this,
+            clipBehavior: widget.clipBehavior,
             restorationId: 'editable',
+            scribbleEnabled: widget.scribbleEnabled,
+            enableIMEPersonalizedLearning: widget.enableIMEPersonalizedLearning,
           ),
         ),
       ),

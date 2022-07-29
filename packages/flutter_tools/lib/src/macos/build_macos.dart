@@ -9,19 +9,26 @@ import '../base/logger.dart';
 import '../base/project_migrator.dart';
 import '../build_info.dart';
 import '../convert.dart';
-import '../globals_null_migrated.dart' as globals;
+import '../globals.dart' as globals;
 import '../ios/xcode_build_settings.dart';
 import '../ios/xcodeproj.dart';
+import '../migrations/xcode_project_object_version_migration.dart';
+import '../migrations/xcode_script_build_phase_migration.dart';
 import '../project.dart';
 import 'cocoapod_utils.dart';
+import 'migrations/macos_deployment_target_migration.dart';
 import 'migrations/remove_macos_framework_link_and_embedding_migration.dart';
 
-/// When run in -quiet mode, Xcode only prints from the underlying tasks to stdout.
+/// When run in -quiet mode, Xcode should only print from the underlying tasks to stdout.
 /// Passing this regexp to trace moves the stdout output to stderr.
-final RegExp _anyOutput = RegExp('.*');
+///
+/// Filter out xcodebuild logging unrelated to macOS builds:
+/// xcodebuild[2096:1927385] Requested but did not find extension point with identifier Xcode.IDEKit.ExtensionPointIdentifierToBundleIdentifier for extension Xcode.DebuggerFoundation.AppExtensionToBundleIdentifierMap.watchOS of plug-in com.apple.dt.IDEWatchSupportCore
+/// note: Using new build system
+final RegExp _filteredOutput = RegExp(r'^((?!Requested but did not find extension point with identifier|note\:).)*$');
 
 /// Builds the macOS project through xcodebuild.
-// TODO(jonahwilliams): refactor to share code with the existing iOS code.
+// TODO(zanderso): refactor to share code with the existing iOS code.
 Future<void> buildMacOS({
   required FlutterProject flutterProject,
   required BuildInfo buildInfo,
@@ -31,7 +38,7 @@ Future<void> buildMacOS({
 }) async {
   if (!flutterProject.macos.xcodeWorkspace.existsSync()) {
     throwToolExit('No macOS desktop project configured. '
-      'See https://flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app '
+      'See https://docs.flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app '
       'to learn about adding macOS support to a project.');
   }
 
@@ -41,6 +48,9 @@ Future<void> buildMacOS({
       globals.logger,
       globals.flutterUsage,
     ),
+    MacOSDeploymentTargetMigration(flutterProject.macos, globals.logger),
+    XcodeProjectObjectVersionMigration(flutterProject.macos, globals.logger),
+    XcodeScriptBuildPhaseMigration(flutterProject.macos, globals.logger),
   ];
 
   final ProjectMigration migration = ProjectMigration(migrators);
@@ -102,6 +112,7 @@ Future<void> buildMacOS({
       '-configuration', configuration,
       '-scheme', 'Runner',
       '-derivedDataPath', flutterBuildDir.absolute.path,
+      '-destination', 'platform=macOS',
       'OBJROOT=${globals.fs.path.join(flutterBuildDir.absolute.path, 'Build', 'Intermediates.noindex')}',
       'SYMROOT=${globals.fs.path.join(flutterBuildDir.absolute.path, 'Build', 'Products')}',
       if (verboseLogging)
@@ -109,10 +120,11 @@ Future<void> buildMacOS({
       else
         '-quiet',
       'COMPILER_INDEX_STORE_ENABLE=NO',
-      ...environmentVariablesAsXcodeBuildSettings(globals.platform)
+      ...environmentVariablesAsXcodeBuildSettings(globals.platform),
     ],
     trace: true,
-    stdoutErrorMatcher: verboseLogging ? null : _anyOutput,
+    stdoutErrorMatcher: verboseLogging ? null : _filteredOutput,
+    mapFunction: verboseLogging ? null : (String line) => _filteredOutput.hasMatch(line) ? line : null,
   );
   } finally {
     status.cancel();

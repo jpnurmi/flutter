@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -86,7 +84,7 @@ abstract class _Benchmark {
 
 /// Times how long it takes to analyze the Flutter repository.
 class _FlutterRepoBenchmark extends _Benchmark {
-  _FlutterRepoBenchmark({bool watch = false}) : super(watch: watch);
+  _FlutterRepoBenchmark({super.watch});
 
   @override
   String get title => 'Flutter repo';
@@ -102,7 +100,7 @@ class _FlutterRepoBenchmark extends _Benchmark {
 
 /// Times how long it takes to analyze the generated "mega_gallery" app.
 class _MegaGalleryBenchmark extends _Benchmark {
-  _MegaGalleryBenchmark({bool watch = false}) : super(watch: watch);
+  _MegaGalleryBenchmark({super.watch});
 
   @override
   String get title => 'mega gallery';

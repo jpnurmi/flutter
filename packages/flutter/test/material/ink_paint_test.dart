@@ -38,7 +38,7 @@ void main() {
   testWidgets('The InkWell widget renders an ink splash', (WidgetTester tester) async {
     const Color highlightColor = Color(0xAAFF0000);
     const Color splashColor = Color(0xAA0000FF);
-    final BorderRadius borderRadius = BorderRadius.circular(6.0);
+    const BorderRadius borderRadius = BorderRadius.all(Radius.circular(6.0));
 
     await tester.pumpWidget(
       Directionality(
@@ -87,7 +87,7 @@ void main() {
   testWidgets('The InkWell widget renders an ink ripple', (WidgetTester tester) async {
     const Color highlightColor = Color(0xAAFF0000);
     const Color splashColor = Color(0xB40000FF);
-    final BorderRadius borderRadius = BorderRadius.circular(6.0);
+    const BorderRadius borderRadius = BorderRadius.all(Radius.circular(6.0));
 
     await tester.pumpWidget(
       Directionality(
@@ -127,13 +127,15 @@ void main() {
         ..translate(x: 0.0, y: 0.0)
         ..translate(x: tapDownOffset.dx, y: tapDownOffset.dy)
         ..something((Symbol method, List<dynamic> arguments) {
-          if (method != #drawCircle)
+          if (method != #drawCircle) {
             return false;
+          }
           final Offset center = arguments[0] as Offset;
           final double radius = arguments[1] as double;
           final Paint paint = arguments[2] as Paint;
-          if (offsetsAreClose(center, expectedCenter) && radiiAreClose(radius, expectedRadius) && paint.color.alpha == expectedAlpha)
+          if (offsetsAreClose(center, expectedCenter) && radiiAreClose(radius, expectedRadius) && paint.color.alpha == expectedAlpha) {
             return true;
+          }
           throw '''
             Expected: center == $expectedCenter, radius == $expectedRadius, alpha == $expectedAlpha
             Found: center == $center radius == $radius alpha == ${paint.color.alpha}''';
@@ -254,7 +256,7 @@ void main() {
   testWidgets('The InkWell widget renders an SelectAction or ActivateAction-induced ink ripple', (WidgetTester tester) async {
     const Color highlightColor = Color(0xAAFF0000);
     const Color splashColor = Color(0xB40000FF);
-    final BorderRadius borderRadius = BorderRadius.circular(6.0);
+    const BorderRadius borderRadius = BorderRadius.all(Radius.circular(6.0));
 
     final FocusNode focusNode = FocusNode(debugLabel: 'Test Node');
     Future<void> buildTest(Intent intent) async {
@@ -423,11 +425,13 @@ void main() {
 
     final RenderBox box = Material.of(tester.element(find.byType(InkWell)))! as RenderBox;
     expect(box, paints..everything((Symbol method, List<dynamic> arguments) {
-      if (method != #drawCircle)
+      if (method != #drawCircle) {
         return true;
+      }
       final Paint paint = arguments[2] as Paint;
-      if (paint.color.alpha == 0)
+      if (paint.color.alpha == 0) {
         return true;
+      }
       throw 'Expected: paint.color.alpha == 0, found: ${paint.color.alpha}';
     }));
   });

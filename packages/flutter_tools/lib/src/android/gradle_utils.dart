@@ -14,12 +14,34 @@ import '../base/utils.dart';
 import '../base/version.dart';
 import '../build_info.dart';
 import '../cache.dart';
-import '../globals_null_migrated.dart' as globals;
+import '../globals.dart' as globals;
 import '../project.dart';
 import '../reporting/reporting.dart';
 import 'android_sdk.dart';
 
-const String _defaultGradleVersion = '6.7';
+// These are the versions used in the project templates.
+//
+// In general, Flutter aims to default to the latest version.
+// However, this currently requires to migrate existing integration tests to the latest supported values.
+//
+// For more information about the latest version, check:
+// https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+// https://kotlinlang.org/docs/gradle.html#plugin-and-versions
+const String templateDefaultGradleVersion = '7.4';
+const String templateAndroidGradlePluginVersion = '7.1.2';
+const String templateDefaultGradleVersionForModule = '7.1.2';
+const String templateKotlinGradlePluginVersion = '1.6.10';
+
+// These versions should match the values in flutter.gradle (FlutterExtension).
+// The Flutter Gradle plugin is only applied to app projects, and modules that are built from source
+// using (include_flutter.groovy).
+// The remaining projects are: plugins, and modules compiled as AARs. In modules, the ephemeral directory
+// `.android` is always regenerated after flutter pub get, so new versions are picked up after a
+// Flutter upgrade.
+const String compileSdkVersion = '31';
+const String minSdkVersion = '16';
+const String targetSdkVersion = '31';
+const String ndkVersion = '21.1.6352462';
 
 final RegExp _androidPluginRegExp = RegExp(r'com\.android\.tools\.build:gradle:(\d+\.\d+\.\d+)');
 
@@ -109,14 +131,14 @@ distributionUrl=https\\://services.gradle.org/distributions/gradle-$gradleVersio
 String getGradleVersionForAndroidPlugin(Directory directory, Logger logger) {
   final File buildFile = directory.childFile('build.gradle');
   if (!buildFile.existsSync()) {
-    logger.printTrace("$buildFile doesn't exist, assuming AGP version: $_defaultGradleVersion");
-    return _defaultGradleVersion;
+    logger.printTrace("$buildFile doesn't exist, assuming Gradle version: $templateDefaultGradleVersion");
+    return templateDefaultGradleVersion;
   }
   final String buildFileContent = buildFile.readAsStringSync();
   final Iterable<Match> pluginMatches = _androidPluginRegExp.allMatches(buildFileContent);
   if (pluginMatches.isEmpty) {
-    logger.printTrace("$buildFile doesn't provide an AGP version, assuming AGP version: $_defaultGradleVersion");
-    return _defaultGradleVersion;
+    logger.printTrace("$buildFile doesn't provide an AGP version, assuming Gradle version: $templateDefaultGradleVersion");
+    return templateDefaultGradleVersion;
   }
   final String? androidPluginVersion = pluginMatches.first.group(1);
   logger.printTrace('$buildFile provides AGP version: $androidPluginVersion');
@@ -181,6 +203,9 @@ String getGradleVersionFor(String androidPluginVersion) {
   }
   if (_isWithinVersionRange(androidPluginVersion, min: '4.0.0', max: '4.1.0')) {
     return '6.7';
+  }
+  if (_isWithinVersionRange(androidPluginVersion, min: '7.0', max: '7.4')) {
+    return '7.4';
   }
   throwToolExit('Unsupported Android Plugin version: $androidPluginVersion.');
 }

@@ -28,6 +28,7 @@ var styles = `
     position: absolute;
     top: 0px;
     left: 0px;
+    overflow: hidden;
   }
 
   .indeterminate {
@@ -129,9 +130,12 @@ String generateMainModule({
   required bool nativeNullAssertions,
   String bootstrapModule = 'main_module.bootstrap',
 }) {
-  // TODO(jonahwilliams): fix typo in dwds and update.
   return '''
 /* ENTRYPOINT_EXTENTION_MARKER */
+// Disable require module timeout
+require.config({
+  waitSeconds: 0
+});
 // Create the main module loaded below.
 define("$bootstrapModule", ["$entrypoint", "dart_sdk"], function(app, dart_sdk) {
   dart_sdk.dart.setStartAsyncSynchronously(true);
@@ -193,7 +197,7 @@ String generateTestEntrypoint({
   Future<void> main() async {
     ui.debugEmulateFlutterTesterEnvironment = true;
     await ui.webOnlyInitializePlatform();
-    webGoldenComparator = DefaultWebGoldenComparator(Uri.parse('$absolutePath'));
+    webGoldenComparator = DefaultWebGoldenComparator(Uri.parse('${Uri.file(absolutePath)}'));
     (ui.window as dynamic).debugOverrideDevicePixelRatio(3.0);
     (ui.window as dynamic).webOnlyDebugPhysicalSizeOverride = const ui.Size(2400, 1800);
 

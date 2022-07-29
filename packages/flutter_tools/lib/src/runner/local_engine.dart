@@ -105,7 +105,7 @@ class LocalEngineLocator {
   Future<String?> _findEngineSourceByPackageConfig(String? packagePath) async {
     final PackageConfig packageConfig = await loadPackageConfigWithLogging(
       _fileSystem.file(
-        // TODO(jonahwilliams): update to package_config
+        // TODO(zanderso): update to package_config
         packagePath ?? _fileSystem.path.join('.packages'),
       ),
       logger: _logger,
@@ -150,10 +150,6 @@ class LocalEngineLocator {
   // Determine the host engine directory associated with the local engine:
   // Strip '_sim_' since there are no host simulator builds.
   String _getHostEngineBasename(String localEngineBasename) {
-    // Allow winuwp builds to be treated as host builds.
-    if (localEngineBasename.startsWith('winuwp')) {
-      return localEngineBasename;
-    }
     String tmpBasename = localEngineBasename.replaceFirst('_sim_', '_');
     tmpBasename = tmpBasename.substring(tmpBasename.indexOf('_') + 1);
     // Strip suffix for various archs.

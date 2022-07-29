@@ -3,14 +3,8 @@
 // found in the LICENSE file.
 
 @TestOn('!chrome')
-// TODO(gspencergoog): Remove this tag once this test's state leaks/test
-// dependency have been fixed.
-// https://github.com/flutter/flutter/issues/85160
-// Fails with "flutter test --test-randomize-ordering-seed=4281596210"
-@Tags(<String>['no-shuffle'])
 
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -426,7 +420,6 @@ void main() {
                   height: 100.0,
                   child: AndroidView(
                     viewType: 'webview',
-                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                     layoutDirection: TextDirection.ltr,
                   ),
                 ),
@@ -1093,9 +1086,6 @@ void main() {
 
       expect(lastPlatformViewTextClient.containsKey('platformViewId'), true);
       expect(lastPlatformViewTextClient['platformViewId'], currentViewId + 1);
-
-      expect(lastPlatformViewTextClient.containsKey('usesVirtualDisplay'), true);
-      expect(lastPlatformViewTextClient['usesVirtualDisplay'], true);
     });
 
     testWidgets('AndroidView clears platform focus when unfocused', (WidgetTester tester) async {
@@ -1191,6 +1181,10 @@ void main() {
 
     testWidgets('clip is handled correctly during resizing', (WidgetTester tester) async {
       // Regressing test for https://github.com/flutter/flutter/issues/67343
+
+      final FakeAndroidPlatformViewsController viewsController = FakeAndroidPlatformViewsController();
+      viewsController.registerViewType('webview');
+
       Widget buildView(double width, double height, Clip clipBehavior) {
         return Center(
           child: SizedBox(
@@ -1225,6 +1219,24 @@ void main() {
       expect(tester.layers.whereType<ClipRectLayer>(), hasLength(1));
       clipRectLayer = tester.layers.whereType<ClipRectLayer>().first;
       expect(clipRectLayer.clipRect, const Rect.fromLTWH(0.0, 0.0, 50.0, 50.0));
+    });
+
+    testWidgets('offset is sent to the platform', (WidgetTester tester) async {
+      final FakeAndroidPlatformViewsController viewsController = FakeAndroidPlatformViewsController();
+      viewsController.registerViewType('webview');
+
+      await tester.pumpWidget(
+        const Padding(
+          padding: EdgeInsets.fromLTRB(10, 20, 0, 0),
+          child: AndroidView(
+            viewType: 'webview',
+            layoutDirection: TextDirection.ltr,
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(viewsController.offsets.values, equals(<Offset>[const Offset(10, 20)]));
     });
   });
 
@@ -1574,7 +1586,6 @@ void main() {
                   height: 100.0,
                   child: UiKitView(
                     viewType: 'webview',
-                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                     layoutDirection: TextDirection.ltr,
                   ),
                 ),
@@ -1966,7 +1977,7 @@ void main() {
       },
     );
 
-    testWidgets('AndroidView rebuilt with same gestureRecognizers', (WidgetTester tester) async {
+    testWidgets('UiKitView rebuilt with same gestureRecognizers', (WidgetTester tester) async {
       final FakeIosPlatformViewsController viewsController = FakeIosPlatformViewsController();
       viewsController.registerViewType('webview');
 
@@ -2000,6 +2011,98 @@ void main() {
       expect(factoryInvocationCount, 1);
     });
 
+    testWidgets('UiKitView can take input focus', (WidgetTester tester) async {
+      final int currentViewId = platformViewsRegistry.getNextPlatformViewId();
+      final FakeIosPlatformViewsController viewsController = FakeIosPlatformViewsController();
+      viewsController.registerViewType('webview');
+
+      final GlobalKey containerKey = GlobalKey();
+      await tester.pumpWidget(
+        Center(
+          child: Column(
+            children: <Widget>[
+              const SizedBox(
+                width: 200.0,
+                height: 100.0,
+                child: UiKitView(viewType: 'webview', layoutDirection: TextDirection.ltr),
+              ),
+              Focus(
+                debugLabel: 'container',
+                child: Container(key: containerKey),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // First frame is before the platform view was created so the render object
+      // is not yet in the tree.
+      await tester.pump();
+
+      final Focus uiKitViewFocusWidget = tester.widget(
+        find.descendant(
+          of: find.byType(UiKitView),
+          matching: find.byType(Focus),
+        ),
+      );
+      final FocusNode uiKitViewFocusNode = uiKitViewFocusWidget.focusNode!;
+      final Element containerElement = tester.element(find.byKey(containerKey));
+      final FocusNode containerFocusNode = Focus.of(containerElement);
+
+      containerFocusNode.requestFocus();
+
+      await tester.pump();
+
+      expect(containerFocusNode.hasFocus, isTrue);
+      expect(uiKitViewFocusNode.hasFocus, isFalse);
+
+      viewsController.invokeViewFocused(currentViewId + 1);
+
+      await tester.pump();
+
+      expect(containerFocusNode.hasFocus, isFalse);
+      expect(uiKitViewFocusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('UiKitView sends TextInput.setPlatformViewClient when focused', (WidgetTester tester) async {
+
+      final int currentViewId = platformViewsRegistry.getNextPlatformViewId();
+      final FakeIosPlatformViewsController viewsController = FakeIosPlatformViewsController();
+      viewsController.registerViewType('webview');
+
+      await tester.pumpWidget(
+        const UiKitView(viewType: 'webview', layoutDirection: TextDirection.ltr)
+      );
+
+      // First frame is before the platform view was created so the render object
+      // is not yet in the tree.
+      await tester.pump();
+
+      final Focus uiKitViewFocusWidget = tester.widget(
+        find.descendant(
+          of: find.byType(UiKitView),
+          matching: find.byType(Focus),
+        ),
+      );
+      final FocusNode uiKitViewFocusNode = uiKitViewFocusWidget.focusNode!;
+
+      late Map<String, dynamic> channelArguments;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.textInput, (MethodCall call) {
+        if (call.method == 'TextInput.setPlatformViewClient') {
+          channelArguments = call.arguments as Map<String, dynamic>;
+        }
+        return null;
+      });
+
+      expect(uiKitViewFocusNode.hasFocus, false);
+
+      uiKitViewFocusNode.requestFocus();
+      await tester.pump();
+
+      expect(uiKitViewFocusNode.hasFocus, true);
+      expect(channelArguments['platformViewId'], currentViewId + 1);
+    });
+
     testWidgets('UiKitView has correct semantics', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
       final int currentViewId = platformViewsRegistry.getNextPlatformViewId();
@@ -2027,7 +2130,14 @@ void main() {
       // is not yet in the tree.
       await tester.pump();
 
-      final SemanticsNode semantics = tester.getSemantics(find.byType(UiKitView));
+      final SemanticsNode semantics = tester.getSemantics(
+        find.descendant(
+          of: find.byType(UiKitView),
+          matching: find.byWidgetPredicate(
+              (Widget widget) => widget.runtimeType.toString() == '_UiKitPlatformView',
+          ),
+        ),
+      );
 
       expect(semantics.platformViewId, currentViewId + 1);
       expect(semantics.rect, const Rect.fromLTWH(0, 0, 200, 100));
@@ -2301,7 +2411,7 @@ void main() {
     });
 
     testWidgets(
-      'PlatformViewLink Widget init, should create a SizedBox widget before onPlatformViewCreated and a PlatformViewSurface after',
+      'PlatformViewLink Widget init, should create a placeholder widget before onPlatformViewCreated and a PlatformViewSurface after',
       (WidgetTester tester) async {
         final int currentViewId = platformViewsRegistry.getNextPlatformViewId();
         late int createdPlatformViewId;
@@ -2325,13 +2435,20 @@ void main() {
         );
 
         await tester.pumpWidget(platformViewLink);
-        expect(() => tester.allWidgets.whereType<SizedBox>().first, returnsNormally);
+
+        expect(
+          tester.allWidgets.map((Widget widget) => widget.runtimeType.toString()).toList(),
+          equals(<String>['PlatformViewLink', '_PlatformViewPlaceHolder']),
+        );
 
         onPlatformViewCreatedCallBack(createdPlatformViewId);
 
         await tester.pump();
 
-        expect(() => tester.allWidgets.whereType<PlatformViewSurface>().first, returnsNormally);
+        expect(
+          tester.allWidgets.map((Widget widget) => widget.runtimeType.toString()).toList(),
+          equals(<String>['PlatformViewLink', 'Focus', '_FocusMarker', 'Semantics', 'PlatformViewSurface']),
+        );
 
         expect(createdPlatformViewId, currentViewId + 1);
       },
@@ -2618,8 +2735,6 @@ void main() {
       expect(focusNode.hasFocus, true);
       expect(lastPlatformViewTextClient.containsKey('platformViewId'), true);
       expect(lastPlatformViewTextClient['platformViewId'], viewId);
-
-      expect(lastPlatformViewTextClient.containsKey('usesVirtualDisplay'), false);
     });
   });
 
@@ -2680,7 +2795,6 @@ void main() {
     }
 
     final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 0);
-    addTearDown(gesture.removePointer);
 
     // Test: Opaque
     await tester.pumpWidget(

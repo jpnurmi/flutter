@@ -15,7 +15,7 @@ import '../cmake.dart';
 import '../cmake_project.dart';
 import '../convert.dart';
 import '../flutter_plugins.dart';
-import '../globals_null_migrated.dart' as globals;
+import '../globals.dart' as globals;
 import '../migrations/cmake_custom_command_migration.dart';
 
 // Matches the following error and warning patterns:
@@ -29,15 +29,16 @@ final RegExp errorMatcher = RegExp(r'(?:(?:.*:\d+:\d+|clang):\s)?(fatal\s)?(?:er
 Future<void> buildLinux(
   LinuxProject linuxProject,
   BuildInfo buildInfo, {
-    String target = 'lib/main.dart',
+    String? target,
     SizeAnalyzer? sizeAnalyzer,
     bool needCrossBuild = false,
-    TargetPlatform targetPlatform = TargetPlatform.linux_x64,
+    required TargetPlatform targetPlatform,
     String targetSysroot = '/',
   }) async {
+  target ??= 'lib/main.dart';
   if (!linuxProject.cmakeFile.existsSync()) {
     throwToolExit('No Linux desktop project configured. See '
-      'https://flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app '
+      'https://docs.flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app '
       'to learn about adding Linux support to a project.');
   }
 
@@ -61,7 +62,7 @@ Future<void> buildLinux(
     environmentConfig['FLUTTER_ENGINE'] = globals.fs.path.dirname(globals.fs.path.dirname(engineOutPath));
     environmentConfig['LOCAL_ENGINE'] = globals.fs.path.basename(engineOutPath);
   }
-  writeGeneratedCmakeConfig(Cache.flutterRoot!, linuxProject, environmentConfig);
+  writeGeneratedCmakeConfig(Cache.flutterRoot!, linuxProject, buildInfo, environmentConfig);
 
   createPluginSymlinks(linuxProject.parent);
 
@@ -119,38 +120,37 @@ Future<void> _runCmake(String buildModeName, Directory sourceDir, Directory buil
 
   await buildDir.create(recursive: true);
 
-  final String buildFlag = toTitleCase(buildModeName);
+  final String buildFlag = sentenceCase(buildModeName);
   final bool needCrossBuildOptionsForArm64 = needCrossBuild
       && targetPlatform == TargetPlatform.linux_arm64;
   int result;
-  try {
-    result = await globals.processUtils.stream(
-      <String>[
-        'cmake',
-        '-G',
-        'Ninja',
-        '-DCMAKE_BUILD_TYPE=$buildFlag',
-        '-DFLUTTER_TARGET_PLATFORM=${getNameForTargetPlatform(targetPlatform)}',
-        // Support cross-building for arm64 targets on x64 hosts.
-        // (Cross-building for x64 on arm64 hosts isn't supported now.)
-        if (needCrossBuild)
-          '-DFLUTTER_TARGET_PLATFORM_SYSROOT=$targetSysroot',
-        if (needCrossBuildOptionsForArm64)
-          '-DCMAKE_C_COMPILER_TARGET=aarch64-linux-gnu',
-        if (needCrossBuildOptionsForArm64)
-          '-DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-gnu',
-        sourceDir.path,
-      ],
-      workingDirectory: buildDir.path,
-      environment: <String, String>{
-        'CC': 'clang',
-        'CXX': 'clang++'
-      },
-      trace: true,
-    );
-  } on ArgumentError {
-    throwToolExit("cmake not found. Run 'flutter doctor' for more information.");
+  if (!globals.processManager.canRun('cmake')) {
+    throwToolExit(globals.userMessages.cmakeMissing);
   }
+  result = await globals.processUtils.stream(
+    <String>[
+      'cmake',
+      '-G',
+      'Ninja',
+      '-DCMAKE_BUILD_TYPE=$buildFlag',
+      '-DFLUTTER_TARGET_PLATFORM=${getNameForTargetPlatform(targetPlatform)}',
+      // Support cross-building for arm64 targets on x64 hosts.
+      // (Cross-building for x64 on arm64 hosts isn't supported now.)
+      if (needCrossBuild)
+        '-DFLUTTER_TARGET_PLATFORM_SYSROOT=$targetSysroot',
+      if (needCrossBuildOptionsForArm64)
+        '-DCMAKE_C_COMPILER_TARGET=aarch64-linux-gnu',
+      if (needCrossBuildOptionsForArm64)
+        '-DCMAKE_CXX_COMPILER_TARGET=aarch64-linux-gnu',
+      sourceDir.path,
+    ],
+    workingDirectory: buildDir.path,
+    environment: <String, String>{
+      'CC': 'clang',
+      'CXX': 'clang++',
+    },
+    trace: true,
+  );
   if (result != 0) {
     throwToolExit('Unable to generate build files');
   }

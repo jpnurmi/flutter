@@ -2,9 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// This file is run as part of a reduced test set in CI on Mac and Windows
+// machines.
+@Tags(<String>['reduced-test-set'])
+
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -683,7 +689,7 @@ void main() {
 
     expect(childWidth, 200.0);
 
-    expect(childWidth, getSurroundingRect(tester, child: 0).width);
+    expect(childWidth, getSurroundingRect(tester).width);
     expect(childWidth, getSurroundingRect(tester, child: 1).width);
     expect(childWidth, getSurroundingRect(tester, child: 2).width);
   });
@@ -910,7 +916,7 @@ void main() {
 
     expect(sharedValue, 1);
 
-    final double childWidth = getChildSize(tester, child: 0).width;
+    final double childWidth = getChildSize(tester).width;
     final Offset centerOfSegmentedControl = tester.getCenter(find.text('Child 1'));
 
     // Tap just inside segment bounds
@@ -1571,6 +1577,48 @@ void main() {
     await expectLater(
       find.byType(RepaintBoundary),
       matchesGoldenFile('segmented_control_test.1.png'),
+    );
+  });
+
+  testWidgets('Hovering over Cupertino segmented control updates cursor to clickable on Web', (WidgetTester tester) async {
+    final Map<int, Widget> children = <int, Widget>{};
+    children[0] = const Text('A');
+    children[1] = const Text('B');
+    children[2] = const Text('C');
+
+    const int currentValue = 0;
+
+    await tester.pumpWidget(
+      RepaintBoundary(
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return boilerplate(
+              child: SizedBox(
+                width: 800.0,
+                child: CupertinoSegmentedControl<int>(
+                  key: const ValueKey<String>('Segmented Control'),
+                  children: children,
+                  onValueChanged: (int newValue) { },
+                  groupValue: currentValue,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    final TestGesture gesture = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 1);
+    await gesture.addPointer(location: const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1), SystemMouseCursors.basic);
+
+    final Offset firstChild = tester.getCenter(find.text('A'));
+    await gesture.moveTo(firstChild);
+    await tester.pumpAndSettle();
+    expect(
+      RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+      kIsWeb ? SystemMouseCursors.click : SystemMouseCursors.basic,
     );
   });
 }

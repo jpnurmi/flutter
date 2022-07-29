@@ -5,6 +5,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/foundation.dart' show clampDouble;
 import 'package:flutter/widgets.dart';
 
 /// Defines the appearance of an [InputDecorator]'s border.
@@ -143,13 +144,12 @@ class UnderlineInputBorder extends InputBorder {
   /// and right corners have a circular radius of 4.0. The [borderRadius]
   /// parameter must not be null.
   const UnderlineInputBorder({
-    BorderSide borderSide = const BorderSide(),
+    super.borderSide = const BorderSide(),
     this.borderRadius = const BorderRadius.only(
       topLeft: Radius.circular(4.0),
       topRight: Radius.circular(4.0),
     ),
-  }) : assert(borderRadius != null),
-       super(borderSide: borderSide);
+  }) : assert(borderRadius != null);
 
   /// The radii of the border's rounded rectangle corners.
   ///
@@ -229,17 +229,20 @@ class UnderlineInputBorder extends InputBorder {
     double gapPercentage = 0.0,
     TextDirection? textDirection,
   }) {
-    if (borderRadius.bottomLeft != Radius.zero || borderRadius.bottomRight != Radius.zero)
+    if (borderRadius.bottomLeft != Radius.zero || borderRadius.bottomRight != Radius.zero) {
       canvas.clipPath(getOuterPath(rect, textDirection: textDirection));
+    }
     canvas.drawLine(rect.bottomLeft, rect.bottomRight, borderSide.toPaint());
   }
 
   @override
   bool operator ==(Object other) {
-    if (identical(this, other))
+    if (identical(this, other)) {
       return true;
-    if (other.runtimeType != runtimeType)
+    }
+    if (other.runtimeType != runtimeType) {
       return false;
+    }
     return other is InputBorder
         && other.borderSide == borderSide;
   }
@@ -285,12 +288,11 @@ class OutlineInputBorder extends InputBorder {
   ///    will extend beyond the container as if the border were still being
   ///    drawn.
   const OutlineInputBorder({
-    BorderSide borderSide = const BorderSide(),
+    super.borderSide = const BorderSide(),
     this.borderRadius = const BorderRadius.all(Radius.circular(4.0)),
     this.gapPadding = 4.0,
   }) : assert(borderRadius != null),
-       assert(gapPadding != null && gapPadding >= 0.0),
-       super(borderSide: borderSide);
+       assert(gapPadding != null && gapPadding >= 0.0);
 
   // The label text's gap can extend into the corners (even both the top left
   // and the top right corner). To avoid the more complicated problem of finding
@@ -416,28 +418,31 @@ class OutlineInputBorder extends InputBorder {
       scaledRRect.blRadiusX * 2.0,
     );
 
+    // This assumes that the radius is circular (x and y radius are equal).
+    // Currently, BorderRadius only supports circular radii.
     const double cornerArcSweep = math.pi / 2.0;
-    final double tlCornerArcSweep = start < scaledRRect.tlRadiusX
-      ? math.asin((start / scaledRRect.tlRadiusX).clamp(-1.0, 1.0))
-      : math.pi / 2.0;
+    final double tlCornerArcSweep = math.acos(
+      clampDouble(1 - start / scaledRRect.tlRadiusX, 0.0, 1.0),
+    );
 
     final Path path = Path()
-      ..addArc(tlCorner, math.pi, tlCornerArcSweep)
-      ..moveTo(scaledRRect.left + scaledRRect.tlRadiusX, scaledRRect.top);
+      ..addArc(tlCorner, math.pi, tlCornerArcSweep);
 
-    if (start > scaledRRect.tlRadiusX)
+    if (start > scaledRRect.tlRadiusX) {
       path.lineTo(scaledRRect.left + start, scaledRRect.top);
+    }
 
     const double trCornerArcStart = (3 * math.pi) / 2.0;
     const double trCornerArcSweep = cornerArcSweep;
     if (start + extent < scaledRRect.width - scaledRRect.trRadiusX) {
-      path
-        ..relativeMoveTo(extent, 0.0)
-        ..lineTo(scaledRRect.right - scaledRRect.trRadiusX, scaledRRect.top)
-        ..addArc(trCorner, trCornerArcStart, trCornerArcSweep);
+      path.moveTo(scaledRRect.left + start + extent, scaledRRect.top);
+      path.lineTo(scaledRRect.right - scaledRRect.trRadiusX, scaledRRect.top);
+      path.addArc(trCorner, trCornerArcStart, trCornerArcSweep);
     } else if (start + extent < scaledRRect.width) {
       final double dx = scaledRRect.width - (start + extent);
-      final double sweep = math.acos(dx / scaledRRect.trRadiusX);
+      final double sweep = math.asin(
+        clampDouble(1 - dx / scaledRRect.trRadiusX, 0.0, 1.0),
+      );
       path.addArc(trCorner, trCornerArcStart + sweep, trCornerArcSweep - sweep);
     }
 
@@ -494,10 +499,12 @@ class OutlineInputBorder extends InputBorder {
 
   @override
   bool operator ==(Object other) {
-    if (identical(this, other))
+    if (identical(this, other)) {
       return true;
-    if (other.runtimeType != runtimeType)
+    }
+    if (other.runtimeType != runtimeType) {
       return false;
+    }
     return other is OutlineInputBorder
         && other.borderSide == borderSide
         && other.borderRadius == borderRadius
@@ -505,5 +512,5 @@ class OutlineInputBorder extends InputBorder {
   }
 
   @override
-  int get hashCode => hashValues(borderSide, borderRadius, gapPadding);
+  int get hashCode => Object.hash(borderSide, borderRadius, gapPadding);
 }

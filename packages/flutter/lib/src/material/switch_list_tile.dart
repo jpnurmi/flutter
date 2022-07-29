@@ -5,13 +5,14 @@
 import 'package:flutter/widgets.dart';
 
 import 'list_tile.dart';
+import 'list_tile_theme.dart';
 import 'switch.dart';
 import 'theme.dart';
 import 'theme_data.dart';
 
 // Examples can assume:
 // void setState(VoidCallback fn) { }
-// bool _isSelected;
+// bool _isSelected = true;
 
 enum _SwitchListTileType { material, adaptive }
 
@@ -46,29 +47,44 @@ enum _SwitchListTileType { material, adaptive }
 /// in the [ListTile.trailing] slot) which can be changed using [controlAffinity].
 /// The [secondary] widget is placed in the [ListTile.leading] slot.
 ///
+/// This widget requires a [Material] widget ancestor in the tree to paint
+/// itself on, which is typically provided by the app's [Scaffold].
+/// The [tileColor], and [selectedTileColor] are not painted by the
+/// [SwitchListTile] itself but by the [Material] widget ancestor. In this
+/// case, one can wrap a [Material] widget around the [SwitchListTile], e.g.:
+///
+/// {@tool snippet}
+/// ```dart
+/// Container(
+///   color: Colors.green,
+///   child: Material(
+///     child: SwitchListTile(
+///       tileColor: Colors.red,
+///       title: const Text('SwitchListTile with red background'),
+///       value: true,
+///       onChanged:(bool? value) { },
+///     ),
+///   ),
+/// )
+/// ```
+/// {@end-tool}
+///
+/// ## Performance considerations when wrapping [SwitchListTile] with [Material]
+///
+/// Wrapping a large number of [SwitchListTile]s individually with [Material]s
+/// is expensive. Consider only wrapping the [SwitchListTile]s that require it
+/// or include a common [Material] ancestor where possible.
+///
 /// To show the [SwitchListTile] as disabled, pass null as the [onChanged]
 /// callback.
 ///
-/// {@tool dartpad --template=stateful_widget_scaffold_center}
-///
+/// {@tool dartpad}
 /// ![SwitchListTile sample](https://flutter.github.io/assets-for-api-docs/assets/material/switch_list_tile.png)
 ///
 /// This widget shows a switch that, when toggled, changes the state of a [bool]
 /// member field called `_lights`.
 ///
-/// ```dart
-/// bool _lights = false;
-///
-/// @override
-/// Widget build(BuildContext context) {
-///   return SwitchListTile(
-///     title: const Text('Lights'),
-///     value: _lights,
-///     onChanged: (bool value) { setState(() { _lights = value; }); },
-///     secondary: const Icon(Icons.lightbulb_outline),
-///   );
-/// }
-/// ```
+/// ** See code in examples/api/lib/material/switch_list_tile/switch_list_tile.0.dart **
 /// {@end-tool}
 ///
 /// ## Semantics in SwitchListTile
@@ -88,82 +104,14 @@ enum _SwitchListTileType { material, adaptive }
 /// into one. Therefore, it may be necessary to create a custom radio tile
 /// widget to accommodate similar use cases.
 ///
-/// {@tool dartpad --template=stateful_widget_scaffold_center}
-///
+/// {@tool dartpad}
 /// ![Switch list tile semantics sample](https://flutter.github.io/assets-for-api-docs/assets/material/switch_list_tile_semantics.png)
 ///
 /// Here is an example of a custom labeled radio widget, called
 /// LinkedLabelRadio, that includes an interactive [RichText] widget that
 /// handles tap gestures.
 ///
-/// ```dart imports
-/// import 'package:flutter/gestures.dart';
-/// ```
-/// ```dart preamble
-/// class LinkedLabelSwitch extends StatelessWidget {
-///   const LinkedLabelSwitch({
-///     Key? key,
-///     required this.label,
-///     required this.padding,
-///     required this.value,
-///     required this.onChanged,
-///   }) : super(key: key);
-///
-///   final String label;
-///   final EdgeInsets padding;
-///   final bool value;
-///   final Function onChanged;
-///
-///   @override
-///   Widget build(BuildContext context) {
-///     return Padding(
-///       padding: padding,
-///       child: Row(
-///         children: <Widget>[
-///           Expanded(
-///             child: RichText(
-///               text: TextSpan(
-///                 text: label,
-///                 style: const TextStyle(
-///                   color: Colors.blueAccent,
-///                   decoration: TextDecoration.underline,
-///                 ),
-///                 recognizer: TapGestureRecognizer()
-///                   ..onTap = () {
-///                   print('Label has been tapped.');
-///                 },
-///               ),
-///             ),
-///           ),
-///           Switch(
-///             value: value,
-///             onChanged: (bool newValue) {
-///               onChanged(newValue);
-///             },
-///           ),
-///         ],
-///       ),
-///     );
-///   }
-/// }
-/// ```
-/// ```dart
-/// bool _isSelected = false;
-///
-/// @override
-/// Widget build(BuildContext context) {
-///   return LinkedLabelSwitch(
-///     label: 'Linked, tappable label text',
-///     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-///     value: _isSelected,
-///     onChanged: (bool newValue) {
-///       setState(() {
-///         _isSelected = newValue;
-///       });
-///     },
-///   );
-/// }
-/// ```
+/// ** See code in examples/api/lib/material/switch_list_tile/switch_list_tile.1.dart **
 /// {@end-tool}
 ///
 /// ## SwitchListTile isn't exactly what I want
@@ -173,69 +121,13 @@ enum _SwitchListTileType { material, adaptive }
 /// combining [Switch] with other widgets, such as [Text], [Padding] and
 /// [InkWell].
 ///
-/// {@tool dartpad --template=stateful_widget_scaffold_center}
-///
+/// {@tool dartpad}
 /// ![Custom switch list tile sample](https://flutter.github.io/assets-for-api-docs/assets/material/switch_list_tile_custom.png)
 ///
 /// Here is an example of a custom LabeledSwitch widget, but you can easily
 /// make your own configurable widget.
 ///
-/// ```dart preamble
-/// class LabeledSwitch extends StatelessWidget {
-///   const LabeledSwitch({
-///     Key? key,
-///     required this.label,
-///     required this.padding,
-///     required this.value,
-///     required this.onChanged,
-///   }) : super(key: key);
-///
-///   final String label;
-///   final EdgeInsets padding;
-///   final bool value;
-///   final Function onChanged;
-///
-///   @override
-///   Widget build(BuildContext context) {
-///     return InkWell(
-///       onTap: () {
-///         onChanged(!value);
-///       },
-///       child: Padding(
-///         padding: padding,
-///         child: Row(
-///           children: <Widget>[
-///             Expanded(child: Text(label)),
-///             Switch(
-///               value: value,
-///               onChanged: (bool newValue) {
-///                 onChanged(newValue);
-///               },
-///             ),
-///           ],
-///         ),
-///       ),
-///     );
-///   }
-/// }
-/// ```
-/// ```dart
-/// bool _isSelected = false;
-///
-/// @override
-/// Widget build(BuildContext context) {
-///   return LabeledSwitch(
-///     label: 'This is the label text',
-///     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-///     value: _isSelected,
-///     onChanged: (bool newValue) {
-///       setState(() {
-///         _isSelected = newValue;
-///       });
-///     },
-///   );
-/// }
-/// ```
+/// ** See code in examples/api/lib/material/switch_list_tile/switch_list_tile.2.dart **
 /// {@end-tool}
 ///
 /// See also:
@@ -259,7 +151,7 @@ class SwitchListTile extends StatelessWidget {
   /// * [value] determines whether this switch is on or off.
   /// * [onChanged] is called when the user toggles the switch on or off.
   const SwitchListTile({
-    Key? key,
+    super.key,
     required this.value,
     required this.onChanged,
     this.tileColor,
@@ -280,13 +172,16 @@ class SwitchListTile extends StatelessWidget {
     this.controlAffinity = ListTileControlAffinity.platform,
     this.shape,
     this.selectedTileColor,
+    this.visualDensity,
+    this.focusNode,
+    this.enableFeedback,
+    this.hoverColor,
   }) : _switchListTileType = _SwitchListTileType.material,
        assert(value != null),
        assert(isThreeLine != null),
        assert(!isThreeLine || subtitle != null),
        assert(selected != null),
-       assert(autofocus != null),
-       super(key: key);
+       assert(autofocus != null);
 
   /// Creates a Material [ListTile] with an adaptive [Switch], following
   /// Material design's
@@ -301,7 +196,7 @@ class SwitchListTile extends StatelessWidget {
   /// ignored: [activeTrackColor], [inactiveThumbColor], [inactiveTrackColor],
   /// [activeThumbImage], [inactiveThumbImage].
   const SwitchListTile.adaptive({
-    Key? key,
+    super.key,
     required this.value,
     required this.onChanged,
     this.tileColor,
@@ -322,13 +217,16 @@ class SwitchListTile extends StatelessWidget {
     this.controlAffinity = ListTileControlAffinity.platform,
     this.shape,
     this.selectedTileColor,
+    this.visualDensity,
+    this.focusNode,
+    this.enableFeedback,
+    this.hoverColor,
   }) : _switchListTileType = _SwitchListTileType.adaptive,
        assert(value != null),
        assert(isThreeLine != null),
        assert(!isThreeLine || subtitle != null),
        assert(selected != null),
-       assert(autofocus != null),
-       super(key: key);
+       assert(autofocus != null);
 
   /// Whether this switch is checked.
   ///
@@ -347,6 +245,7 @@ class SwitchListTile extends StatelessWidget {
   /// [StatefulWidget] using the [State.setState] method, so that the parent
   /// gets rebuilt; for example:
   ///
+  /// {@tool snippet}
   /// ```dart
   /// SwitchListTile(
   ///   value: _isSelected,
@@ -355,9 +254,10 @@ class SwitchListTile extends StatelessWidget {
   ///       _isSelected = newValue;
   ///     });
   ///   },
-  ///   title: Text('Selection'),
+  ///   title: const Text('Selection'),
   /// )
   /// ```
+  /// {@end-tool}
   final ValueChanged<bool>? onChanged;
 
   /// The color to use when this switch is on.
@@ -420,7 +320,7 @@ class SwitchListTile extends StatelessWidget {
 
   /// Whether this list tile is part of a vertically dense list.
   ///
-  /// If this property is null then its value is based on [ListTileTheme.dense].
+  /// If this property is null then its value is based on [ListTileThemeData.dense].
   final bool? dense;
 
   /// The tile's internal padding.
@@ -452,11 +352,29 @@ class SwitchListTile extends StatelessWidget {
   /// By default, the value of `controlAffinity` is [ListTileControlAffinity.platform].
   final ListTileControlAffinity controlAffinity;
 
-  /// {@macro flutter.material.ListTileTheme.shape}
+  /// {@macro flutter.material.ListTile.shape}
   final ShapeBorder? shape;
 
   /// If non-null, defines the background color when [SwitchListTile.selected] is true.
   final Color? selectedTileColor;
+
+  /// Defines how compact the list tile's layout will be.
+  ///
+  /// {@macro flutter.material.themedata.visualDensity}
+  final VisualDensity? visualDensity;
+
+  /// {@macro flutter.widgets.Focus.focusNode}
+  final FocusNode? focusNode;
+
+  /// {@macro flutter.material.ListTile.enableFeedback}
+  ///
+  /// See also:
+  ///
+  ///  * [Feedback] for providing platform-specific feedback to certain actions.
+  final bool? enableFeedback;
+
+  /// The color for the tile's [Material] when a pointer is hovering over it.
+  final Color? hoverColor;
 
   @override
   Widget build(BuildContext context) {
@@ -523,6 +441,10 @@ class SwitchListTile extends StatelessWidget {
           autofocus: autofocus,
           shape: shape,
           tileColor: tileColor,
+          visualDensity: visualDensity,
+          focusNode: focusNode,
+          enableFeedback: enableFeedback,
+          hoverColor: hoverColor,
         ),
       ),
     );

@@ -22,9 +22,8 @@ const List<int> kTransparentImage = <int>[
 ];
 
 final Platform platform = FakePlatform(
-  operatingSystem: 'linux',
   environment: <String, String>{
-    'HOME': '/'
+    'HOME': '/',
   },
 );
 

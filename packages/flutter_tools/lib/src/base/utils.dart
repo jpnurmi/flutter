@@ -34,11 +34,20 @@ String snakeCase(String str, [ String sep = '_' ]) {
       (Match m) => '${m.start == 0 ? '' : sep}${m[0]!.toLowerCase()}');
 }
 
-String toTitleCase(String str) {
+/// Converts `fooBar` to `FooBar`.
+///
+/// This uses [toBeginningOfSentenceCase](https://pub.dev/documentation/intl/latest/intl/toBeginningOfSentenceCase.html),
+/// with the input and return value of non-nullable.
+String sentenceCase(String str, [String? locale]) {
   if (str.isEmpty) {
     return str;
   }
-  return str.substring(0, 1).toUpperCase() + str.substring(1);
+  return toBeginningOfSentenceCase(str, locale)!;
+}
+
+/// Converts `foo_bar` to `Foo Bar`.
+String snakeCaseToTitleCase(String snakeCaseString) {
+  return snakeCaseString.split('_').map(camelCase).map(sentenceCase).join(' ');
 }
 
 /// Return the plural of the given word (`cat(s)`).
@@ -148,9 +157,9 @@ class SettingsFile {
 
 /// Given a data structure which is a Map of String to dynamic values, return
 /// the same structure (`Map<String, dynamic>`) with the correct runtime types.
-Map<String, dynamic>? castStringKeyedMap(dynamic untyped) {
+Map<String, Object?>? castStringKeyedMap(Object? untyped) {
   final Map<dynamic, dynamic>? map = untyped as Map<dynamic, dynamic>?;
-  return map?.cast<String, dynamic>();
+  return map?.cast<String, Object?>();
 }
 
 /// Smallest column that will be used for text wrapping. If the requested column

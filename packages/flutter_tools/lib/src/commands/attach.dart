@@ -2,11 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:async';
 
-import 'package:meta/meta.dart';
 import 'package:vm_service/vm_service.dart';
 
 import '../android/android_device.dart';
@@ -18,10 +15,11 @@ import '../base/io.dart';
 import  '../build_info.dart';
 import '../commands/daemon.dart';
 import '../compile.dart';
+import '../daemon.dart';
 import '../device.dart';
 import '../device_port_forwarder.dart';
 import '../fuchsia/fuchsia_device.dart';
-import '../globals_null_migrated.dart' as globals;
+import '../globals.dart' as globals;
 import '../ios/devices.dart';
 import '../ios/simulators.dart';
 import '../macos/macos_ipad_device.dart';
@@ -122,7 +120,7 @@ class AttachCommand extends FlutterCommand {
     hotRunnerFactory ??= HotRunnerFactory();
   }
 
-  HotRunnerFactory hotRunnerFactory;
+  HotRunnerFactory? hotRunnerFactory;
 
   @override
   final String name = 'attach';
@@ -144,24 +142,27 @@ If the app or module is already running and the specific observatory port is
 known, it can be explicitly provided to attach via the command-line, e.g.
 `$ flutter attach --debug-port 12345`''';
 
-  int get debugPort {
-    if (argResults['debug-port'] == null) {
+  @override
+  final String category = FlutterCommandCategory.tools;
+
+  int? get debugPort {
+    if (argResults!['debug-port'] == null) {
       return null;
     }
     try {
-      return int.parse(stringArg('debug-port'));
+      return int.parse(stringArgDeprecated('debug-port')!);
     } on Exception catch (error) {
       throwToolExit('Invalid port for `--debug-port`: $error');
     }
   }
 
-  Uri get debugUri {
-    if (argResults['debug-url'] == null) {
+  Uri? get debugUri {
+    if (argResults!['debug-url'] == null) {
       return null;
     }
-    final Uri uri = Uri.tryParse(stringArg('debug-url'));
+    final Uri? uri = Uri.tryParse(stringArgDeprecated('debug-url')!);
     if (uri == null) {
-      throwToolExit('Invalid `--debug-url`: ${stringArg('debug-url')}');
+      throwToolExit('Invalid `--debug-url`: ${stringArgDeprecated('debug-url')}');
     }
     if (!uri.hasPort) {
       throwToolExit('Port not specified for `--debug-url`: $uri');
@@ -169,11 +170,11 @@ known, it can be explicitly provided to attach via the command-line, e.g.
     return uri;
   }
 
-  String get appId {
-    return stringArg('app-id');
+  String? get appId {
+    return stringArgDeprecated('app-id');
   }
 
-  String get userIdentifier => stringArg(FlutterOptions.kDeviceUser);
+  String? get userIdentifier => stringArgDeprecated(FlutterOptions.kDeviceUser);
 
   @override
   Future<void> validateCommand() async {
@@ -185,13 +186,13 @@ known, it can be explicitly provided to attach via the command-line, e.g.
       throwToolExit(null);
     }
     debugPort;
-    if (debugPort == null && debugUri == null && argResults.wasParsed(FlutterCommand.ipv6Flag)) {
+    if (debugPort == null && debugUri == null && argResults!.wasParsed(FlutterCommand.ipv6Flag)) {
       throwToolExit(
         'When the --debug-port or --debug-url is unknown, this command determines '
         'the value of --ipv6 on its own.',
       );
     }
-    if (debugPort == null && debugUri == null && argResults.wasParsed(FlutterCommand.observatoryPortOption)) {
+    if (debugPort == null && debugUri == null && argResults!.wasParsed(FlutterCommand.observatoryPortOption)) {
       throwToolExit(
         'When the --debug-port or --debug-url is unknown, this command does not use '
         'the value of --observatory-port.',
@@ -203,7 +204,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
     }
 
     if (userIdentifier != null) {
-      final Device device = await findTargetDevice();
+      final Device? device = await findTargetDevice();
       if (device is! AndroidDevice) {
         throwToolExit('--${FlutterOptions.kDeviceUser} is only supported for Android');
       }
@@ -214,9 +215,13 @@ known, it can be explicitly provided to attach via the command-line, e.g.
   Future<FlutterCommandResult> runCommand() async {
     await _validateArguments();
 
-    final Device device = await findTargetDevice();
+    final Device? device = await findTargetDevice();
 
-    final Artifacts overrideArtifacts = device.artifactOverrides ?? globals.artifacts;
+    if (device == null) {
+      throwToolExit('Did not find any valid target devices.');
+    }
+
+    final Artifacts? overrideArtifacts = device.artifactOverrides ?? globals.artifacts;
     await context.run<void>(
       body: () => _attachToDevice(device),
       overrides: <Type, Generator>{
@@ -230,10 +235,12 @@ known, it can be explicitly provided to attach via the command-line, e.g.
   Future<void> _attachToDevice(Device device) async {
     final FlutterProject flutterProject = FlutterProject.current();
 
-    final Daemon daemon = boolArg('machine')
+    final Daemon? daemon = boolArgDeprecated('machine')
       ? Daemon(
-          stdinCommandStream,
-          stdoutCommandResponse,
+          DaemonConnection(
+            daemonStreams: DaemonStreams.fromStdio(globals.stdio, logger: globals.logger),
+            logger: globals.logger,
+          ),
           notifyingLogger: (globals.logger is NotifyingLogger)
             ? globals.logger as NotifyingLogger
             : NotifyingLogger(verbose: globals.logger.isVerbose, parent: globals.logger),
@@ -241,20 +248,20 @@ known, it can be explicitly provided to attach via the command-line, e.g.
         )
       : null;
 
-    Stream<Uri> observatoryUri;
-    bool usesIpv6 = ipv6;
+    Stream<Uri>? observatoryUri;
+    bool usesIpv6 = ipv6!;
     final String ipv6Loopback = InternetAddress.loopbackIPv6.address;
     final String ipv4Loopback = InternetAddress.loopbackIPv4.address;
     final String hostname = usesIpv6 ? ipv6Loopback : ipv4Loopback;
 
     if (debugPort == null && debugUri == null) {
       if (device is FuchsiaDevice) {
-        final String module = stringArg('module');
+        final String module = stringArgDeprecated('module')!;
         if (module == null) {
           throwToolExit("'--module' is required for attaching to a Fuchsia device");
         }
         usesIpv6 = device.ipv6;
-        FuchsiaIsolateDiscoveryProtocol isolateDiscoveryProtocol;
+        FuchsiaIsolateDiscoveryProtocol? isolateDiscoveryProtocol;
         try {
           isolateDiscoveryProtocol = device.getIsolateDiscoveryProtocol(module);
           observatoryUri = Stream<Uri>.value(await isolateDiscoveryProtocol.uri).asBroadcastStream();
@@ -267,8 +274,8 @@ known, it can be explicitly provided to attach via the command-line, e.g.
           rethrow;
         }
       } else if ((device is IOSDevice) || (device is IOSSimulator) || (device is MacOSDesignedForIPadDevice)) {
-        final Uri uriFromMdns =
-          await MDnsObservatoryDiscovery.instance.getObservatoryUri(
+        final Uri? uriFromMdns =
+          await MDnsObservatoryDiscovery.instance!.getObservatoryUri(
             appId,
             device,
             usesIpv6: usesIpv6,
@@ -286,7 +293,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
             // to find the service protocol.
             await device.getLogReader(includePastLogs: device is AndroidDevice),
             portForwarder: device.portForwarder,
-            ipv6: ipv6,
+            ipv6: ipv6!,
             devicePort: deviceVmservicePort,
             hostPort: hostVmservicePort,
             logger: globals.logger,
@@ -302,7 +309,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
           buildObservatoryUri(
             device,
             debugUri?.host ?? hostname,
-            debugPort ?? debugUri.port,
+            debugPort ?? debugUri!.port,
             hostVmservicePort,
             debugUri?.path,
           )
@@ -312,7 +319,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
     globals.terminal.usesTerminalUi = daemon == null;
 
     try {
-      int result;
+      int? result;
       if (daemon != null) {
         final ResidentRunner runner = await createResidentRunner(
           observatoryUris: observatoryUri,
@@ -320,17 +327,17 @@ known, it can be explicitly provided to attach via the command-line, e.g.
           flutterProject: flutterProject,
           usesIpv6: usesIpv6,
         );
-        AppInstance app;
+        late AppInstance app;
         try {
           app = await daemon.appDomain.launch(
             runner,
-            ({Completer<DebugConnectionInfo> connectionInfoCompleter,
-              Completer<void> appStartedCompleter}) {
+            ({Completer<DebugConnectionInfo>? connectionInfoCompleter,
+              Completer<void>? appStartedCompleter}) {
               return runner.attach(
                 connectionInfoCompleter: connectionInfoCompleter,
                 appStartedCompleter: appStartedCompleter,
                 allowExistingDdsInstance: true,
-                enableDevTools: boolArg(FlutterCommand.kEnableDevTools),
+                enableDevTools: boolArgDeprecated(FlutterCommand.kEnableDevTools),
               );
             },
             device,
@@ -343,7 +350,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
         } on Exception catch (error) {
           throwToolExit(error.toString());
         }
-        result = await app.runner.waitForAppToFinish();
+        result = await app.runner!.waitForAppToFinish();
         assert(result != null);
         return;
       }
@@ -355,7 +362,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
           usesIpv6: usesIpv6,
         );
         final Completer<void> onAppStart = Completer<void>.sync();
-        TerminalHandler terminalHandler;
+        TerminalHandler? terminalHandler;
         unawaited(onAppStart.future.whenComplete(() {
           terminalHandler = TerminalHandler(
             runner,
@@ -363,8 +370,8 @@ known, it can be explicitly provided to attach via the command-line, e.g.
             terminal: globals.terminal,
             signals: globals.signals,
             processInfo: globals.processInfo,
-            reportReady: boolArg('report-ready'),
-            pidFile: stringArg('pid-file'),
+            reportReady: boolArgDeprecated('report-ready'),
+            pidFile: stringArgDeprecated('pid-file'),
           )
             ..registerSignalHandlers()
             ..setupTerminal();
@@ -372,7 +379,7 @@ known, it can be explicitly provided to attach via the command-line, e.g.
         result = await runner.attach(
           appStartedCompleter: onAppStart,
           allowExistingDdsInstance: true,
-          enableDevTools: boolArg(FlutterCommand.kEnableDevTools),
+          enableDevTools: boolArgDeprecated(FlutterCommand.kEnableDevTools),
         );
         if (result != 0) {
           throwToolExit(null, exitCode: result);
@@ -390,18 +397,18 @@ known, it can be explicitly provided to attach via the command-line, e.g.
       }
       rethrow;
     } finally {
-      final List<ForwardedPort> ports = device.portForwarder.forwardedPorts.toList();
+      final List<ForwardedPort> ports = device.portForwarder!.forwardedPorts.toList();
       for (final ForwardedPort port in ports) {
-        await device.portForwarder.unforward(port);
+        await device.portForwarder!.unforward(port);
       }
     }
   }
 
   Future<ResidentRunner> createResidentRunner({
-    @required Stream<Uri> observatoryUris,
-    @required Device device,
-    @required FlutterProject flutterProject,
-    @required bool usesIpv6,
+    required Stream<Uri> observatoryUris,
+    required Device device,
+    required FlutterProject flutterProject,
+    required bool usesIpv6,
   }) async {
     assert(observatoryUris != null);
     assert(device != null);
@@ -411,10 +418,8 @@ known, it can be explicitly provided to attach via the command-line, e.g.
 
     final FlutterDevice flutterDevice = await FlutterDevice.create(
       device,
-      fileSystemRoots: stringsArg(FlutterOptions.kFileSystemRoot),
-      fileSystemScheme: stringArg(FlutterOptions.kFileSystemScheme),
       target: targetFile,
-      targetModel: TargetModel(stringArg('target-model')),
+      targetModel: TargetModel(stringArgDeprecated('target-model')!),
       buildInfo: buildInfo,
       userIdentifier: userIdentifier,
       platform: globals.platform,
@@ -424,17 +429,18 @@ known, it can be explicitly provided to attach via the command-line, e.g.
     final DebuggingOptions debuggingOptions = DebuggingOptions.enabled(
       buildInfo,
       enableDds: enableDds,
+      ddsPort: ddsPort,
       devToolsServerAddress: devToolsServerAddress,
     );
 
     return buildInfo.isDebug
-      ? hotRunnerFactory.build(
+      ? hotRunnerFactory!.build(
           flutterDevices,
           target: targetFile,
           debuggingOptions: debuggingOptions,
-          packagesFilePath: globalResults['packages'] as String,
-          projectRootPath: stringArg('project-root'),
-          dillOutputPath: stringArg('output-dill'),
+          packagesFilePath: globalResults!['packages'] as String?,
+          projectRootPath: stringArgDeprecated('project-root'),
+          dillOutputPath: stringArgDeprecated('output-dill'),
           ipv6: usesIpv6,
           flutterProject: flutterProject,
         )
@@ -452,17 +458,17 @@ known, it can be explicitly provided to attach via the command-line, e.g.
 class HotRunnerFactory {
   HotRunner build(
     List<FlutterDevice> devices, {
-    String target,
-    DebuggingOptions debuggingOptions,
+    required String target,
+    required DebuggingOptions debuggingOptions,
     bool benchmarkMode = false,
-    File applicationBinary,
+    File? applicationBinary,
     bool hostIsIde = false,
-    String projectRootPath,
-    String packagesFilePath,
-    String dillOutputPath,
+    String? projectRootPath,
+    String? packagesFilePath,
+    String? dillOutputPath,
     bool stayResident = true,
     bool ipv6 = false,
-    FlutterProject flutterProject,
+    FlutterProject? flutterProject,
   }) => HotRunner(
     devices,
     target: target,

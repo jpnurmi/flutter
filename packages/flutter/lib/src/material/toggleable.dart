@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
@@ -182,17 +183,20 @@ mixin ToggleableStateMixin<S extends StatefulWidget> on TickerProviderStateMixin
   /// visual representation of the Toggleable matches the current [value].
   void animateToValue() {
     if (tristate) {
-      if (value == null)
+      if (value == null) {
         _positionController.value = 0.0;
-      if (value != false)
+      }
+      if (value ?? true) {
         _positionController.forward();
-      else
+      } else {
         _positionController.reverse();
+      }
     } else {
-      if (value == true)
+      if (value ?? false) {
         _positionController.forward();
-      else
+      } else {
         _positionController.reverse();
+      }
     }
   }
 
@@ -222,8 +226,9 @@ mixin ToggleableStateMixin<S extends StatefulWidget> on TickerProviderStateMixin
   }
 
   void _handleTap([Intent? _]) {
-    if (!isInteractive)
+    if (!isInteractive) {
       return;
+    }
     switch (value) {
       case false:
         onChanged!(true);
@@ -281,7 +286,7 @@ mixin ToggleableStateMixin<S extends StatefulWidget> on TickerProviderStateMixin
     if (!isInteractive) MaterialState.disabled,
     if (_hovering) MaterialState.hovered,
     if (_focused) MaterialState.focused,
-    if (value != false) MaterialState.selected,
+    if (value ?? true) MaterialState.selected,
   };
 
   /// Typically wraps a `painter` that draws the actual visuals of the
@@ -338,7 +343,7 @@ mixin ToggleableStateMixin<S extends StatefulWidget> on TickerProviderStateMixin
 /// Subclasses must implement the [paint] method to draw the actual visuals of
 /// the Toggleable. In their [paint] method subclasses may call
 /// [paintRadialReaction] to draw a radial ink reaction for this control.
-abstract class ToggleablePainter extends ChangeNotifier implements CustomPainter  {
+abstract class ToggleablePainter extends ChangeNotifier implements CustomPainter {
   /// The visual value of the control.
   ///
   /// Usually set to [ToggleableStateMixin.position].
@@ -589,4 +594,7 @@ abstract class ToggleablePainter extends ChangeNotifier implements CustomPainter
 
   @override
   bool shouldRebuildSemantics(covariant CustomPainter oldDelegate) => false;
+
+  @override
+  String toString() => describeIdentity(this);
 }

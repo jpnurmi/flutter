@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:ui' as ui show TextStyle, ParagraphStyle, FontFeature, Shadow;
+import 'dart:ui' as ui show FontFeature, FontVariation, ParagraphStyle, Shadow, TextStyle;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
@@ -38,6 +38,7 @@ class _DartUiTextStyleToStringMatcher extends Matcher {
     _propertyToString('foreground', textStyle.foreground),
     _propertyToString('shadows', textStyle.shadows),
     _propertyToString('fontFeatures', textStyle.fontFeatures),
+    _propertyToString('fontVariations', textStyle.fontVariations),
   ];
 
   static String _propertyToString(String name, Object? property) => '$name: ${property ?? 'unspecified'}';
@@ -50,8 +51,9 @@ class _DartUiTextStyleToStringMatcher extends Matcher {
     final String description = item.toString();
     const String prefix = 'TextStyle(';
     const String suffix = ')';
-    if (!description.startsWith(prefix) || !description.endsWith(suffix))
+    if (!description.startsWith(prefix) || !description.endsWith(suffix)) {
       return false;
+    }
 
     final String propertyDescription = description.substring(
       prefix.length,
@@ -94,7 +96,7 @@ void main() {
       equals('TextStyle(inherit: false, <no style specified>)'),
     );
     expect(
-      const TextStyle(inherit: true).toString(),
+      const TextStyle().toString(),
       equals('TextStyle(<all styles inherited>)'),
     );
 
@@ -354,8 +356,18 @@ void main() {
   });
 
   test('TextStyle.hashCode', () {
-    const TextStyle a = TextStyle(fontFamilyFallback: <String>['Roboto'], shadows: <ui.Shadow>[ui.Shadow()], fontFeatures: <ui.FontFeature>[ui.FontFeature('abcd')]);
-    const TextStyle b = TextStyle(fontFamilyFallback: <String>['Noto'], shadows: <ui.Shadow>[ui.Shadow()], fontFeatures: <ui.FontFeature>[ui.FontFeature('abcd')]);
+    const TextStyle a = TextStyle(
+        fontFamilyFallback: <String>['Roboto'],
+        shadows: <ui.Shadow>[ui.Shadow()],
+        fontFeatures: <ui.FontFeature>[ui.FontFeature('abcd')],
+        fontVariations: <ui.FontVariation>[ui.FontVariation('wght', 123.0)],
+    );
+    const TextStyle b = TextStyle(
+        fontFamilyFallback: <String>['Noto'],
+        shadows: <ui.Shadow>[ui.Shadow()],
+        fontFeatures: <ui.FontFeature>[ui.FontFeature('abcd')],
+        fontVariations: <ui.FontVariation>[ui.FontVariation('wght', 123.0)],
+    );
     expect(a.hashCode, a.hashCode);
     expect(a.hashCode, isNot(equals(b.hashCode)));
 
@@ -465,7 +477,7 @@ void main() {
     final ui.ParagraphStyle paragraphStyle0 = style0.getParagraphStyle(textScaleFactor: 2.5);
 
     const TextStyle style1 = TextStyle(fontSize: 25);
-    final ui.ParagraphStyle paragraphStyle1 = style1.getParagraphStyle(textScaleFactor: 1);
+    final ui.ParagraphStyle paragraphStyle1 = style1.getParagraphStyle();
 
     expect(paragraphStyle0 == paragraphStyle1, true);
   });
@@ -476,6 +488,7 @@ void main() {
       shadows: <ui.Shadow>[],
       fontStyle: FontStyle.normal,
       fontFeatures: <ui.FontFeature>[],
+      fontVariations: <ui.FontVariation>[],
       textBaseline: TextBaseline.alphabetic,
       leadingDistribution: TextLeadingDistribution.even,
     );
@@ -487,6 +500,8 @@ void main() {
     expect(style.apply(locale: const Locale.fromSubtags(languageCode: 'es')).locale, const Locale.fromSubtags(languageCode: 'es'));
     expect(style.apply().fontFeatures, const <ui.FontFeature>[]);
     expect(style.apply(fontFeatures: const <ui.FontFeature>[ui.FontFeature.enable('test')]).fontFeatures, const <ui.FontFeature>[ui.FontFeature.enable('test')]);
+    expect(style.apply().fontVariations, const <ui.FontVariation>[]);
+    expect(style.apply(fontVariations: const <ui.FontVariation>[ui.FontVariation('test', 100.0)]).fontVariations, const <ui.FontVariation>[ui.FontVariation('test', 100.0)]);
     expect(style.apply().textBaseline, TextBaseline.alphabetic);
     expect(style.apply(textBaseline: TextBaseline.ideographic).textBaseline, TextBaseline.ideographic);
     expect(style.apply().leadingDistribution, TextLeadingDistribution.even);
@@ -494,5 +509,18 @@ void main() {
       style.apply(leadingDistribution: TextLeadingDistribution.proportional).leadingDistribution,
       TextLeadingDistribution.proportional,
     );
+  });
+
+  test('TextStyle fontFamily and package', () {
+    expect(const TextStyle(fontFamily: 'fontFamily', package: 'foo') != const TextStyle(fontFamily: 'fontFamily', package: 'bar'), true);
+    expect(const TextStyle(fontFamily: 'fontFamily', package: 'foo').hashCode != const TextStyle(package: 'bar', fontFamily: 'fontFamily').hashCode, true);
+    expect(const TextStyle(fontFamily: 'fontFamily').fontFamily, 'fontFamily');
+    expect(const TextStyle(fontFamily: 'fontFamily').fontFamily, 'fontFamily');
+    expect(const TextStyle(fontFamily: 'fontFamily').copyWith(package: 'bar').fontFamily, 'packages/bar/fontFamily');
+    expect(const TextStyle(fontFamily: 'fontFamily', package: 'foo').fontFamily, 'packages/foo/fontFamily');
+    expect(const TextStyle(fontFamily: 'fontFamily', package: 'foo').copyWith(package: 'bar').fontFamily, 'packages/bar/fontFamily');
+    expect(const TextStyle().merge(const TextStyle(fontFamily: 'fontFamily', package: 'bar')).fontFamily, 'packages/bar/fontFamily');
+    expect(const TextStyle().apply(fontFamily: 'fontFamily', package: 'foo').fontFamily, 'packages/foo/fontFamily');
+    expect(const TextStyle(fontFamily: 'fontFamily', package: 'foo').apply(fontFamily: 'fontFamily', package: 'bar').fontFamily, 'packages/bar/fontFamily');
   });
 }

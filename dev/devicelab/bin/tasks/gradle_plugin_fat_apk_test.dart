@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// @dart = 2.8
-
 import 'dart:io';
 
 import 'package:flutter_devicelab/framework/apk_utils.dart';
@@ -23,6 +21,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--debug',
+              '--verbose',
             ],
           );
         });
@@ -55,6 +54,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
+              '--verbose',
             ],
           );
         });
@@ -82,7 +82,8 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
-              '--target-platform=android-arm,android-arm64'
+              '--verbose',
+              '--target-platform=android-arm,android-arm64',
             ],
           );
         });
@@ -109,6 +110,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
+              '--verbose',
               '--split-per-abi',
               '--target-platform=android-arm,android-arm64',
             ],
@@ -147,6 +149,7 @@ Future<void> main() async {
             options: <String>[
               'apk',
               '--release',
+              '--verbose',
             ],
           );
         });
