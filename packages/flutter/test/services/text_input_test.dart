@@ -824,6 +824,12 @@ void main() {
       expect(fakeTextChannel.outgoingCalls.length, 6);
       expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setEditableSizeAndTransform');
 
+      connection.setSelectionRects(const <SelectionRect>[SelectionRect(position: 0, bounds: Rect.zero)]);
+      expectedMethodCalls.add('setSelectionRects');
+      expect(control.methodCalls, expectedMethodCalls);
+      expect(fakeTextChannel.outgoingCalls.length, 7);
+      expect(fakeTextChannel.outgoingCalls.last.method, 'TextInput.setSelectionRects');
+
       connection.setStyle(
         fontFamily: null,
         fontSize: null,
